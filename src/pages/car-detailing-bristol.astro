@@ -1,0 +1,30 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+import ServicePageTemplate from '../components/ServicePageTemplate.astro';
+import { getServiceBySlug } from '../data/services';
+import { SITE_URL } from '../data/site-config';
+import { getServicePageSchema, getFaqPageSchema, getBreadcrumbSchema } from '../utils/schema';
+
+const service = getServiceBySlug('car-detailing-bristol')!;
+
+const serviceSchema = getServicePageSchema(service);
+const faqSchema = getFaqPageSchema(service.faqs);
+const breadcrumbSchema = getBreadcrumbSchema([
+  { name: 'Home', url: SITE_URL },
+  { name: 'Services', url: `${SITE_URL}/#services` },
+  { name: service.shortName, url: `${SITE_URL}/${service.slug}/` },
+]);
+---
+
+<Layout
+  title={service.metaTitle}
+  description={service.metaDescription}
+  canonicalUrl={`${SITE_URL}/${service.slug}/`}
+  ogImage={`${SITE_URL}${service.heroImage}.webp`}
+  pageSchema={[serviceSchema, faqSchema, breadcrumbSchema]}
+  noGlobalFaq={true}
+>
+  <ServicePageTemplate service={service} />
+</Layout>

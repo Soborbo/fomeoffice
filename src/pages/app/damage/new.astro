@@ -1,0 +1,479 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+---
+<AppLayout title="New damage report" active="damage">
+  <div class="flex items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">New damage report</h1>
+    <a href="/app/damage" class="text-sm text-gray-600 hover:text-[#19576d]">← Back to list</a>
+  </div>
+
+  <p class="mt-1 text-sm text-gray-500">All fields marked <span class="text-red-600">*</span> are required.</p>
+
+  <form id="damage-form" class="mt-5 space-y-5" novalidate>
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="f-occurred" class="block text-sm font-medium text-gray-700">Occurred at <span class="text-red-600">*</span></label>
+          <input id="f-occurred" type="datetime-local" aria-describedby="e-occurred" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          <p id="e-occurred" class="mt-1 hidden text-sm text-red-700"></p>
+        </div>
+        <div>
+          <label for="f-worker" class="block text-sm font-medium text-gray-700">Worker responsible</label>
+          <select id="f-worker" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+            <option value="">— Unknown / not specified —</option>
+          </select>
+        </div>
+      </div>
+
+      <fieldset class="mt-5" aria-describedby="e-categories">
+        <legend class="text-sm font-medium text-gray-700">Category (tick all that apply) <span class="text-red-600">*</span></legend>
+        <div id="category-grid" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="scratch" /> Scratch
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="mirror_damage" /> Mirror
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="dent" /> Dent
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="paint_damage" /> Paint
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="wheel_damage" /> Wheel
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="glass_damage" /> Glass
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="interior_damage" /> Interior
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="checkbox" name="category" value="other" /> Other
+          </label>
+        </div>
+        <p id="e-categories" class="mt-2 hidden text-sm text-red-700"></p>
+      </fieldset>
+
+      <div class="mt-5">
+        <label for="f-description" class="block text-sm font-medium text-gray-700">
+          Description <span class="text-red-600">*</span>
+          <span class="text-xs font-normal text-gray-500">(min 100 characters)</span>
+        </label>
+        <textarea id="f-description" rows="4" maxlength="2000" aria-describedby="e-description f-description-count" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" placeholder="What happened, where on the vehicle, any context, when it was noticed, who else was present"></textarea>
+        <div class="mt-1 flex items-center justify-between">
+          <p id="e-description" class="hidden text-sm text-red-700"></p>
+          <p id="f-description-count" class="ms-auto text-xs text-gray-500"><span id="desc-len">0</span> / 100 minimum</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Customer <span class="text-red-600">*</span></h2>
+      <p class="mt-1 text-sm text-gray-500">Name and phone are required so we can reach the customer about the damage.</p>
+      <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        <div>
+          <label for="f-cname" class="block text-xs font-medium text-gray-600">Name <span class="text-red-600">*</span></label>
+          <input id="f-cname" type="text" maxlength="120" aria-describedby="e-cname" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          <p id="e-cname" class="mt-1 hidden text-sm text-red-700"></p>
+        </div>
+        <div>
+          <label for="f-cphone" class="block text-xs font-medium text-gray-600">Phone <span class="text-red-600">*</span></label>
+          <input id="f-cphone" type="tel" maxlength="40" aria-describedby="e-cphone" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          <p id="e-cphone" class="mt-1 hidden text-sm text-red-700"></p>
+        </div>
+        <div>
+          <label for="f-reg" class="block text-xs font-medium text-gray-600">Vehicle reg</label>
+          <input id="f-reg" type="text" maxlength="20" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 font-mono uppercase focus:border-[#19576d] focus:outline-none" />
+        </div>
+      </div>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Photos <span class="text-red-600">*</span></h2>
+      <p class="mt-1 text-sm text-gray-600">At least one photo is required. Up to 10. Each is auto-compressed to WebP before upload.</p>
+
+      <div class="mt-3 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 p-4">
+        <input
+          id="f-photo"
+          type="file"
+          accept="image/*"
+          capture="environment"
+          class="block w-full text-sm text-gray-700 file:me-3 file:rounded-md file:border-0 file:bg-[#19576d] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#134559]"
+        />
+        <p id="photo-status" class="mt-2 hidden text-xs"></p>
+      </div>
+
+      <div id="photo-grid" class="mt-3 grid grid-cols-3 gap-2 sm:grid-cols-5"></div>
+      <p id="e-photos" class="mt-2 hidden text-sm text-red-700"></p>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Resolution <span class="text-red-600">*</span></h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend class="text-sm font-medium text-gray-700">Status</legend>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="open" checked /> Open
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="in_progress" /> In progress
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="resolved" /> Resolved
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="escalated" /> Escalated
+            </label>
+          </div>
+        </fieldset>
+        <div>
+          <label for="f-comp" class="block text-sm font-medium text-gray-700">Compensation paid (£)</label>
+          <input id="f-comp" type="number" step="0.01" min="0" inputmode="decimal" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </div>
+        <div class="sm:col-span-2">
+          <label for="f-resolution" class="block text-sm font-medium text-gray-700">Resolution notes <span class="text-red-600">*</span></label>
+          <textarea id="f-resolution" rows="3" maxlength="2000" aria-describedby="e-resolution" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" placeholder="What's been done, what's planned, who's handling it. 'Pending investigation' is fine if it's brand new."></textarea>
+          <p id="e-resolution" class="mt-1 hidden text-sm text-red-700"></p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Inline summary right above Save so the user sees the result of a
+         submit attempt without scrolling to the top. Stays hidden until
+         validation produces something to show. -->
+    <div id="submit-summary" class="hidden rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert" aria-live="polite"></div>
+    <div id="status-bar" class="hidden rounded-md border p-3 text-sm" role="status" aria-live="polite"></div>
+
+    <div class="flex items-center justify-end gap-3">
+      <a href="/app/damage" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</a>
+      <button id="submit" type="submit" class="rounded-md bg-[#19576d] px-6 py-3 text-base font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+    </div>
+  </form>
+
+  <script is:inline src="/scripts/image-compress.js"></script>
+  <script is:inline>
+    (function () {
+      var form = document.getElementById('damage-form');
+      var submitSummary = document.getElementById('submit-summary');
+      var statusBar = document.getElementById('status-bar');
+      var submit = document.getElementById('submit');
+
+      var fOccurred = document.getElementById('f-occurred');
+      var fWorker = document.getElementById('f-worker');
+      var fDesc = document.getElementById('f-description');
+      var descLen = document.getElementById('desc-len');
+      var fCName = document.getElementById('f-cname');
+      var fCPhone = document.getElementById('f-cphone');
+      var fReg = document.getElementById('f-reg');
+      var fPhoto = document.getElementById('f-photo');
+      var photoStatus = document.getElementById('photo-status');
+      var photoGrid = document.getElementById('photo-grid');
+      var fComp = document.getElementById('f-comp');
+      var fResolution = document.getElementById('f-resolution');
+
+      // Per-field error nodes — one per validated field.
+      var errors = {
+        occurred:    document.getElementById('e-occurred'),
+        categories:  document.getElementById('e-categories'),
+        description: document.getElementById('e-description'),
+        cname:       document.getElementById('e-cname'),
+        cphone:      document.getElementById('e-cphone'),
+        photos:      document.getElementById('e-photos'),
+        resolution:  document.getElementById('e-resolution'),
+      };
+
+      var photoKeys = []; // R2 keys, in upload order
+
+      function setError(field, msg) {
+        var node = errors[field];
+        if (!node) return;
+        if (msg) {
+          node.textContent = msg;
+          node.classList.remove('hidden');
+        } else {
+          node.textContent = '';
+          node.classList.add('hidden');
+        }
+      }
+      function clearAllErrors() {
+        Object.keys(errors).forEach(function (k) { setError(k, ''); });
+        submitSummary.classList.add('hidden');
+        submitSummary.textContent = '';
+      }
+
+      function showStatus(msg, kind) {
+        statusBar.textContent = msg;
+        statusBar.className = 'rounded-md p-3 text-sm border ';
+        if (kind === 'error') statusBar.className += 'border-red-300 bg-red-50 text-red-800';
+        else if (kind === 'success') statusBar.className += 'border-green-300 bg-green-50 text-green-800';
+        else statusBar.className += 'border-gray-300 bg-gray-50 text-gray-700';
+      }
+      function clearStatus() { statusBar.className = 'hidden rounded-md p-3 text-sm'; }
+
+      function showSummary(count) {
+        submitSummary.textContent = count === 1
+          ? '1 field needs attention — see the message under it.'
+          : count + ' fields need attention — see the messages under each.';
+        submitSummary.classList.remove('hidden');
+      }
+
+      function setPhotoStatus(msg, kind) {
+        photoStatus.textContent = msg;
+        photoStatus.className = 'mt-2 text-xs ';
+        if (kind === 'error') photoStatus.className += 'text-red-700';
+        else if (kind === 'success') photoStatus.className += 'text-green-700';
+        else photoStatus.className += 'text-gray-600';
+        photoStatus.classList.remove('hidden');
+      }
+
+      function selectedCategories() {
+        var checked = form.querySelectorAll('input[name="category"]:checked');
+        var out = [];
+        for (var i = 0; i < checked.length; i++) out.push(checked[i].value);
+        return out;
+      }
+
+      function selectedRadio(name) {
+        var el = form.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+      }
+
+      function poundsToPence(v) {
+        if (v === '' || v == null) return null;
+        var n = Number(v);
+        if (!isFinite(n)) return null;
+        return Math.round(n * 100);
+      }
+
+      function nowLocalIso() {
+        var d = new Date();
+        var pad = function (n) { return n < 10 ? '0' + n : '' + n; };
+        return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) +
+          'T' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+      }
+
+      function renderPhotos() {
+        photoGrid.innerHTML = '';
+        photoKeys.forEach(function (key, idx) {
+          var wrap = document.createElement('div');
+          wrap.className = 'relative overflow-hidden rounded-md border border-gray-200';
+          var img = document.createElement('img');
+          img.src = '/api/app/r2/get?key=' + encodeURIComponent(key);
+          img.alt = 'photo ' + (idx + 1);
+          img.loading = 'lazy';
+          img.className = 'h-24 w-full object-cover';
+          var btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'absolute end-1 top-1 rounded-full bg-white/90 px-2 text-xs font-bold text-red-700 shadow';
+          btn.textContent = '×';
+          btn.addEventListener('click', function () {
+            photoKeys.splice(idx, 1);
+            renderPhotos();
+          });
+          wrap.appendChild(img);
+          wrap.appendChild(btn);
+          photoGrid.appendChild(wrap);
+        });
+      }
+
+      // Live char counter for description — turns red until it hits 100.
+      fDesc.addEventListener('input', function () {
+        var n = fDesc.value.trim().length;
+        descLen.textContent = String(n);
+        descLen.className = n >= 100 ? 'text-green-700 font-semibold' : 'text-red-700 font-semibold';
+        // Clear the error as soon as the user starts addressing it.
+        if (n >= 100) setError('description', '');
+      });
+
+      // Clear field errors as the user fills them.
+      fOccurred.addEventListener('change', function () { if (fOccurred.value) setError('occurred', ''); });
+      fCName.addEventListener('input', function () { if (fCName.value.trim()) setError('cname', ''); });
+      fCPhone.addEventListener('input', function () { if (/\d/.test(fCPhone.value)) setError('cphone', ''); });
+      fResolution.addEventListener('input', function () { if (fResolution.value.trim()) setError('resolution', ''); });
+      form.querySelectorAll('input[name="category"]').forEach(function (cb) {
+        cb.addEventListener('change', function () {
+          if (selectedCategories().length > 0) setError('categories', '');
+        });
+      });
+
+      fPhoto.addEventListener('change', async function () {
+        var file = fPhoto.files && fPhoto.files[0];
+        if (!file) return;
+        if (photoKeys.length >= 10) {
+          setPhotoStatus('Photo limit reached (10).', 'error');
+          fPhoto.value = '';
+          return;
+        }
+        if (!window.imageCompress) {
+          setPhotoStatus('Image compression not available — reload the page.', 'error');
+          return;
+        }
+
+        setPhotoStatus('Compressing…', 'info');
+        try {
+          var result = await window.imageCompress.compressImage(file, {
+            maxWidth: 1600, maxHeight: 1600, quality: 0.85, format: 'webp',
+          });
+          var validation = window.imageCompress.validateCompression(result);
+          if (!validation.ok) {
+            setPhotoStatus(validation.reason, 'error');
+            fPhoto.value = '';
+            return;
+          }
+          var sizeKb = (result.compressedSize / 1024).toFixed(0);
+          setPhotoStatus('Uploading ' + sizeKb + 'KB…', 'info');
+
+          var uploadRes = await fetch('/api/app/r2/upload?purpose=damage', {
+            method: 'POST',
+            headers: { 'Content-Type': 'image/webp' },
+            credentials: 'same-origin',
+            body: result.blob,
+          });
+          var uploadJson = await uploadRes.json();
+          if (!uploadRes.ok) {
+            setPhotoStatus(uploadJson.error || 'Upload failed', 'error');
+            return;
+          }
+          photoKeys.push(uploadJson.key);
+          renderPhotos();
+          setError('photos', '');
+          setPhotoStatus('Photo ' + photoKeys.length + ' attached (' + sizeKb + 'KB)', 'success');
+          fPhoto.value = '';
+        } catch (err) {
+          setPhotoStatus(err && err.message ? err.message : 'Compression/upload failed', 'error');
+        }
+      });
+
+      function loadWorkers() {
+        var today = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(new Date());
+        fetch('/api/app/daily?date=' + today, { credentials: 'same-origin' })
+          .then(function (r) { return r.json(); })
+          .then(function (data) {
+            (data.workers || []).forEach(function (w) {
+              var opt = document.createElement('option');
+              opt.value = w.id;
+              opt.textContent = w.name + ' (' + w.role + ')';
+              fWorker.appendChild(opt);
+            });
+          })
+          .catch(function (err) { console.warn('[workers]', err); });
+      }
+
+      function validate() {
+        clearAllErrors();
+        var problems = 0;
+        var firstBadEl = null;
+
+        if (!fOccurred.value) {
+          setError('occurred', 'Occurred-at is required.');
+          firstBadEl = firstBadEl || fOccurred;
+          problems++;
+        }
+        var cats = selectedCategories();
+        if (cats.length === 0) {
+          setError('categories', 'Pick at least one category.');
+          firstBadEl = firstBadEl || form.querySelector('input[name="category"]');
+          problems++;
+        }
+        var descTrim = fDesc.value.trim();
+        if (descTrim.length < 100) {
+          setError('description', 'Description must be at least 100 characters (currently ' + descTrim.length + ').');
+          firstBadEl = firstBadEl || fDesc;
+          problems++;
+        }
+        if (!fCName.value.trim()) {
+          setError('cname', 'Customer name is required.');
+          firstBadEl = firstBadEl || fCName;
+          problems++;
+        }
+        if (!fCPhone.value.trim()) {
+          setError('cphone', 'Customer phone is required.');
+          firstBadEl = firstBadEl || fCPhone;
+          problems++;
+        } else if (!/\d/.test(fCPhone.value)) {
+          setError('cphone', 'Phone must contain digits.');
+          firstBadEl = firstBadEl || fCPhone;
+          problems++;
+        }
+        if (photoKeys.length === 0) {
+          setError('photos', 'At least one photo is required.');
+          firstBadEl = firstBadEl || fPhoto;
+          problems++;
+        }
+        if (!fResolution.value.trim()) {
+          setError('resolution', 'Resolution notes are required.');
+          firstBadEl = firstBadEl || fResolution;
+          problems++;
+        }
+
+        return { ok: problems === 0, problems: problems, firstBadEl: firstBadEl, cats: cats };
+      }
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearStatus();
+
+        var v = validate();
+        if (!v.ok) {
+          showSummary(v.problems);
+          if (v.firstBadEl && typeof v.firstBadEl.focus === 'function') {
+            v.firstBadEl.focus({ preventScroll: false });
+          }
+          return;
+        }
+
+        var body = {
+          occurred_at: fOccurred.value,
+          categories: v.cats,
+          description: fDesc.value.trim(),
+          customer_name: fCName.value.trim(),
+          customer_phone: fCPhone.value.trim(),
+          vehicle_registration: fReg.value || '',
+          photo_r2_keys: photoKeys,
+          resolution: fResolution.value.trim(),
+          resolution_status: selectedRadio('status') || 'open',
+        };
+        if (fWorker.value) body.worker_responsible = Number(fWorker.value);
+        var compPence = poundsToPence(fComp.value);
+        if (compPence !== null) body.compensation_amount = compPence;
+
+        submit.disabled = true;
+        submit.textContent = 'Saving…';
+        fetch('/api/app/damage', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              showStatus(res.data.error || 'Save failed.', 'error');
+              submit.disabled = false;
+              submit.textContent = 'Save';
+              return;
+            }
+            window.location.href = '/app/damage/' + res.data.id;
+          })
+          .catch(function (err) {
+            showStatus('Network error. ' + err.message, 'error');
+            submit.disabled = false;
+            submit.textContent = 'Save';
+          });
+      });
+
+      // Boot.
+      fOccurred.value = nowLocalIso();
+      descLen.textContent = '0';
+      descLen.className = 'text-red-700 font-semibold';
+      loadWorkers();
+    })();
+  </script>
+</AppLayout>

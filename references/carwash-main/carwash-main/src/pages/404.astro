@@ -1,0 +1,82 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Page Not Found">
+  <section class="py-32 bg-gray-50">
+    <div class="container mx-auto px-4 text-center">
+      <div class="max-w-2xl mx-auto">
+        <!-- 404 Number -->
+        <h1 class="text-9xl font-bold text-primary mb-4">404</h1>
+
+        <!-- Error Message -->
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4">
+          Oops! Page Not Found
+        </h2>
+
+        <p class="text-gray-600 text-lg mb-8">
+          The page you are looking for might have been removed, had its name changed, or is temporarily unavailable.
+        </p>
+
+        <!-- Search Box -->
+        <div class="max-w-md mx-auto mb-8">
+          <div class="relative">
+            <input
+              type="text"
+              placeholder="Search..."
+              class="w-full px-6 py-4 rounded-full border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-colors pr-14"
+            />
+            <button class="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-primary text-white rounded-full flex items-center justify-center hover:bg-secondary transition-colors">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <!-- Back to Home Button -->
+        <a
+          href="/"
+          class="inline-flex items-center gap-2 bg-primary text-white px-8 py-3 rounded-full font-medium hover:bg-secondary transition-colors"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Home
+        </a>
+
+        <!-- Decorative Elements -->
+        <div class="mt-16 relative">
+          <div class="w-64 h-64 mx-auto relative">
+            <!-- Car illustration placeholder -->
+            <div class="absolute inset-0 flex items-center justify-center">
+              <svg width="200" height="120" viewBox="0 0 200 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <!-- Cloud -->
+                <ellipse cx="100" cy="30" rx="40" ry="20" fill="#F5E642"/>
+                <ellipse cx="70" cy="35" rx="25" ry="15" fill="#F5E642"/>
+                <ellipse cx="130" cy="35" rx="25" ry="15" fill="#F5E642"/>
+
+                <!-- Car body -->
+                <path d="M30 90C30 90 50 60 100 60C150 60 170 90 170 90L30 90Z" fill="#1e2a4a"/>
+                <rect x="40" y="70" width="40" height="20" rx="5" fill="#3b4b7a"/>
+                <rect x="120" y="70" width="40" height="20" rx="5" fill="#3b4b7a"/>
+
+                <!-- Wheels -->
+                <circle cx="60" cy="90" r="15" fill="#333"/>
+                <circle cx="60" cy="90" r="8" fill="#666"/>
+                <circle cx="140" cy="90" r="15" fill="#333"/>
+                <circle cx="140" cy="90" r="8" fill="#666"/>
+
+                <!-- Question marks -->
+                <text x="85" y="50" font-size="24" fill="#1e2a4a" font-weight="bold">?</text>
+                <text x="105" y="50" font-size="24" fill="#1e2a4a" font-weight="bold">?</text>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>

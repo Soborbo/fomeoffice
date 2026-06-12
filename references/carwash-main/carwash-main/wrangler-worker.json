@@ -1,0 +1,33 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "carwash",
+  "compatibility_date": "2025-01-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "carwash-booking-db",
+      "database_id": "2070c018-be08-4de2-bdfd-4327e4e6f481"
+    }
+  ],
+  "r2_buckets": [
+    {
+      "binding": "R2_BUCKET",
+      "bucket_name": "carwash-crm-uploads"
+    }
+  ],
+  "vars": {
+    "R2_BUCKET_NAME": "carwash-crm-uploads",
+    "SITE_URL": "https://bristolcarwash.co.uk"
+  },
+  "kv_namespaces": [
+    { "binding": "SESSION", "id": "56080c2f70d842608a3153a7651d377f" }
+  ]
+}

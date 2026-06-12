@@ -1,0 +1,390 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+---
+<AppLayout title="Attendance matrix" active="staff">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <div>
+      <a href="/admin/staff" class="text-sm text-gray-600 hover:text-[#19576d]">← Staff list</a>
+      <h1 class="mt-1 text-2xl font-semibold text-[#19576d]">Attendance matrix</h1>
+    </div>
+    <div class="flex flex-wrap items-end gap-2">
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">From</span>
+        <input id="f-from" type="date" class="mt-1 rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">To</span>
+        <input id="f-to" type="date" class="mt-1 rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <div class="flex gap-1">
+        <button type="button" data-preset="today" class="rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50">Today</button>
+        <button type="button" data-preset="week" class="rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50">This week</button>
+        <button type="button" data-preset="month" class="rounded-md border border-gray-300 px-2 py-1 text-xs hover:bg-gray-50">This month</button>
+      </div>
+    </div>
+  </div>
+
+  <p class="mt-2 text-sm text-gray-500">
+    Each cell shows the shift on that day: <span class="font-semibold text-[#19576d]">F</span> = full,
+    <span class="font-semibold text-[#19576d]">H</span> = half, <span class="font-semibold text-[#19576d]">O</span> = overtime.
+    Earned/Paid totals use the same date range. <em>Owed</em> is the lifetime balance.
+    Click <em>Pay</em> to record a payment — it's logged as a cash expense by default and reduces cash on hand.
+  </p>
+
+  <section class="mt-5 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div id="loading" class="p-8 text-center text-gray-500">Loading…</div>
+    <div id="empty" class="hidden p-8 text-center text-gray-500">No active staff.</div>
+    <table id="matrix" class="hidden w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr id="head-row">
+          <th class="sticky start-0 z-10 bg-gray-50 px-3 py-2">Worker</th>
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </section>
+
+  <!-- Pay modal -->
+  <div id="pay-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="pay-title">
+    <div class="w-full max-w-md rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+        <h2 id="pay-title" class="text-lg font-semibold text-[#19576d]">Record payment</h2>
+        <button id="pay-close" type="button" class="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="Close">×</button>
+      </div>
+      <form id="pay-form" class="space-y-4 p-5" novalidate>
+        <p id="pay-worker" class="text-sm text-gray-700"></p>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label for="p-amount" class="block text-xs font-medium text-gray-600">Amount (£) <span class="text-red-600">*</span></label>
+            <input id="p-amount" type="number" min="0.01" step="0.01" inputmode="decimal" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            <p id="pe-amount" class="mt-1 hidden text-sm text-red-700"></p>
+          </div>
+          <div>
+            <label for="p-method" class="block text-xs font-medium text-gray-600">Method</label>
+            <select id="p-method" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+              <option value="cash" selected>Cash (reduces cash on hand)</option>
+              <option value="bank_transfer">Bank transfer</option>
+              <option value="cheque">Cheque</option>
+            </select>
+          </div>
+          <div>
+            <label for="p-paid-at" class="block text-xs font-medium text-gray-600">Paid at</label>
+            <input id="p-paid-at" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div></div>
+          <div>
+            <label for="p-period-start" class="block text-xs font-medium text-gray-600">Covers period start</label>
+            <input id="p-period-start" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div>
+            <label for="p-period-end" class="block text-xs font-medium text-gray-600">Covers period end</label>
+            <input id="p-period-end" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+        </div>
+        <label class="block">
+          <span class="block text-xs font-medium text-gray-600">Note</span>
+          <textarea id="p-desc" rows="2" maxlength="500" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" placeholder="e.g. weekly wage 5–11 May"></textarea>
+        </label>
+
+        <div id="pay-error" class="hidden rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert"></div>
+
+        <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
+          <button id="pay-cancel" type="button" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button id="pay-save" type="submit" class="rounded-md bg-[#19576d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Record payment</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var fFrom = document.getElementById('f-from');
+      var fTo = document.getElementById('f-to');
+      var headRow = document.getElementById('head-row');
+      var rows = document.getElementById('rows');
+      var matrix = document.getElementById('matrix');
+      var loading = document.getElementById('loading');
+      var empty = document.getElementById('empty');
+
+      var payModal = document.getElementById('pay-modal');
+      var payClose = document.getElementById('pay-close');
+      var payCancel = document.getElementById('pay-cancel');
+      var payForm = document.getElementById('pay-form');
+      var payWorker = document.getElementById('pay-worker');
+      var payError = document.getElementById('pay-error');
+      var paySave = document.getElementById('pay-save');
+      var pAmount = document.getElementById('p-amount');
+      var pMethod = document.getElementById('p-method');
+      var pPaidAt = document.getElementById('p-paid-at');
+      var pPeriodStart = document.getElementById('p-period-start');
+      var pPeriodEnd = document.getElementById('p-period-end');
+      var pDesc = document.getElementById('p-desc');
+      var peAmount = document.getElementById('pe-amount');
+      var currentWorker = null; // {id, name, owed_lifetime}
+
+      var SHIFT_LETTER = { full: 'F', half: 'H', overtime: 'O' };
+      var SHIFT_CLASS = {
+        full:     'bg-green-100 text-green-800',
+        half:     'bg-yellow-100 text-yellow-800',
+        overtime: 'bg-purple-100 text-purple-800',
+      };
+
+      function fmtMoney(p) {
+        if (p == null) return '—';
+        var sign = p < 0 ? '-' : '';
+        var abs = Math.abs(p);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        if (pennies === 0) return sign + '£' + pounds;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function poundsToPence(v) {
+        if (v === '' || v == null) return 0;
+        var n = Number(v);
+        if (!isFinite(n) || n <= 0) return 0;
+        return Math.round(n * 100);
+      }
+
+      function todayUk() {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(new Date());
+      }
+      function shiftDate(iso, days) {
+        var d = new Date(iso + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + days);
+        return d.toISOString().slice(0, 10);
+      }
+      function weekStart(iso) {
+        var d = new Date(iso + 'T00:00:00Z');
+        var dow = d.getUTCDay(); // 0=Sun..6=Sat
+        var back = dow === 0 ? 6 : dow - 1;
+        d.setUTCDate(d.getUTCDate() - back);
+        return d.toISOString().slice(0, 10);
+      }
+      function monthStart(iso) { return iso.slice(0, 7) + '-01'; }
+      function shortDay(iso) {
+        var d = new Date(iso + 'T00:00:00Z');
+        if (isNaN(d.getTime())) return iso;
+        var label = d.toLocaleDateString('en-GB', { weekday: 'short', timeZone: 'UTC' });
+        return label + ' ' + iso.slice(8, 10);
+      }
+
+      function applyPreset(name) {
+        var today = todayUk();
+        if (name === 'today') { fFrom.value = today; fTo.value = today; }
+        else if (name === 'week') { fFrom.value = weekStart(today); fTo.value = today; }
+        else if (name === 'month') { fFrom.value = monthStart(today); fTo.value = today; }
+        load();
+      }
+      document.querySelectorAll('[data-preset]').forEach(function (btn) {
+        btn.addEventListener('click', function () { applyPreset(btn.getAttribute('data-preset')); });
+      });
+      [fFrom, fTo].forEach(function (el) { el.addEventListener('change', load); });
+
+      function clearHead() {
+        // Rebuild from "Worker" header onwards.
+        headRow.innerHTML = '<th class="sticky start-0 z-10 bg-gray-50 px-3 py-2">Worker</th>';
+      }
+
+      function addHeadCell(text, extra) {
+        var th = document.createElement('th');
+        th.className = 'px-3 py-2 ' + (extra || '');
+        th.textContent = text;
+        headRow.appendChild(th);
+      }
+
+      function renderHead(days) {
+        clearHead();
+        days.forEach(function (d) { addHeadCell(shortDay(d), 'text-center'); });
+        addHeadCell('Earned', 'text-end');
+        addHeadCell('Paid', 'text-end');
+        addHeadCell('Owed (lifetime)', 'text-end');
+        addHeadCell('', '');
+      }
+
+      function shiftCell(cell) {
+        var td = document.createElement('td');
+        td.className = 'px-3 py-2 text-center';
+        if (!cell) { td.textContent = '—'; td.className += ' text-gray-300'; return td; }
+        var pill = document.createElement('span');
+        pill.className = 'inline-block rounded px-1.5 py-0.5 text-xs font-semibold ' +
+          (SHIFT_CLASS[cell.shift] || 'bg-gray-100 text-gray-700');
+        pill.textContent = SHIFT_LETTER[cell.shift] || cell.shift.charAt(0).toUpperCase();
+        pill.title = cell.shift + ' — ' + fmtMoney(cell.pay_amount);
+        td.appendChild(pill);
+        return td;
+      }
+
+      function moneyCell(pence, cls) {
+        var td = document.createElement('td');
+        td.className = 'px-3 py-2 text-end tabular-nums ' + (cls || '');
+        td.textContent = fmtMoney(pence);
+        return td;
+      }
+
+      function renderRows(workers, days) {
+        rows.innerHTML = '';
+        if (!workers || workers.length === 0) {
+          empty.classList.remove('hidden');
+          matrix.classList.add('hidden');
+          return;
+        }
+        empty.classList.add('hidden');
+
+        workers.forEach(function (w) {
+          var byDate = {};
+          (w.days || []).forEach(function (cell) { byDate[cell.date] = cell; });
+
+          var tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50';
+
+          var nameTd = document.createElement('td');
+          nameTd.className = 'sticky start-0 z-10 bg-white px-3 py-2 font-medium';
+          var nameLink = document.createElement('a');
+          nameLink.href = '/admin/staff/' + w.id;
+          nameLink.className = 'text-[#19576d] hover:underline';
+          nameLink.textContent = w.name;
+          nameTd.appendChild(nameLink);
+          var roleSpan = document.createElement('span');
+          roleSpan.className = 'ms-2 text-xs text-gray-400';
+          roleSpan.textContent = w.role;
+          nameTd.appendChild(roleSpan);
+          tr.appendChild(nameTd);
+
+          days.forEach(function (d) { tr.appendChild(shiftCell(byDate[d])); });
+
+          tr.appendChild(moneyCell(w.earned_range, 'font-semibold'));
+          tr.appendChild(moneyCell(w.paid_range));
+          tr.appendChild(moneyCell(
+            w.owed_lifetime,
+            w.owed_lifetime > 0 ? 'font-semibold text-red-700' : 'text-gray-500',
+          ));
+
+          var actTd = document.createElement('td');
+          actTd.className = 'px-3 py-2 text-end';
+          var payBtn = document.createElement('button');
+          payBtn.type = 'button';
+          payBtn.textContent = 'Pay';
+          payBtn.className = 'rounded-md bg-[#19576d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#134559]';
+          payBtn.addEventListener('click', function () { openPay(w); });
+          actTd.appendChild(payBtn);
+          tr.appendChild(actTd);
+
+          rows.appendChild(tr);
+        });
+
+        matrix.classList.remove('hidden');
+      }
+
+      function openPay(w) {
+        currentWorker = { id: w.id, name: w.name, owed_lifetime: w.owed_lifetime };
+        payWorker.textContent = 'Paying ' + w.name + '. Lifetime owed: ' + fmtMoney(w.owed_lifetime) + '.';
+        // Pre-fill amount with the owed lifetime (capped at 0 so we never
+        // pre-fill a negative).
+        var owed = Math.max(0, w.owed_lifetime);
+        pAmount.value = owed > 0 ? (owed / 100).toFixed(2) : '';
+        pMethod.value = 'cash';
+        pPaidAt.value = todayUk();
+        pPeriodStart.value = fFrom.value || '';
+        pPeriodEnd.value = fTo.value || '';
+        pDesc.value = '';
+        peAmount.classList.add('hidden');
+        payError.classList.add('hidden');
+        payError.textContent = '';
+        payModal.classList.remove('hidden');
+        payModal.classList.add('flex');
+        pAmount.focus();
+      }
+      function closePay() {
+        currentWorker = null;
+        payModal.classList.add('hidden');
+        payModal.classList.remove('flex');
+      }
+      payClose.addEventListener('click', closePay);
+      payCancel.addEventListener('click', closePay);
+      payModal.addEventListener('click', function (e) {
+        if (e.target === payModal) closePay();
+      });
+
+      payForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        if (!currentWorker) return;
+        peAmount.classList.add('hidden');
+        payError.classList.add('hidden');
+
+        var amount = poundsToPence(pAmount.value);
+        if (amount <= 0) {
+          peAmount.textContent = 'Amount must be greater than zero.';
+          peAmount.classList.remove('hidden');
+          return;
+        }
+
+        var body = {
+          amount: amount,
+          method: pMethod.value,
+          paid_at: pPaidAt.value || '',
+          covers_period_start: pPeriodStart.value || '',
+          covers_period_end: pPeriodEnd.value || '',
+          description: pDesc.value || '',
+        };
+
+        paySave.disabled = true;
+        paySave.textContent = 'Saving…';
+        fetch('/api/admin/staff/' + currentWorker.id + '/pay', {
+          method: 'POST',
+          credentials: 'same-origin',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            paySave.disabled = false;
+            paySave.textContent = 'Record payment';
+            if (!res.ok) {
+              payError.textContent = (res.data && res.data.error) || 'Save failed.';
+              payError.classList.remove('hidden');
+              return;
+            }
+            closePay();
+            load();
+          })
+          .catch(function (err) {
+            paySave.disabled = false;
+            paySave.textContent = 'Record payment';
+            payError.textContent = 'Network error. ' + err.message;
+            payError.classList.remove('hidden');
+          });
+      });
+
+      function load() {
+        if (!fFrom.value || !fTo.value) return;
+        if (fFrom.value > fTo.value) return;
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        matrix.classList.add('hidden');
+
+        var qs = '?from=' + encodeURIComponent(fFrom.value) + '&to=' + encodeURIComponent(fTo.value);
+        fetch('/api/admin/staff/matrix' + qs, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            renderHead(data.days || []);
+            renderRows(data.workers || [], data.days || []);
+            loading.classList.add('hidden');
+          })
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      // Boot — default to the current calendar week (Mon → today).
+      applyPreset('week');
+    })();
+  </script>
+</AppLayout>

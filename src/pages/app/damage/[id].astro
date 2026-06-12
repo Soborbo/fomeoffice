@@ -1,0 +1,306 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+const id = Astro.params.id;
+const isSuper = Astro.locals.user!.role === 'super_admin';
+---
+<AppLayout title="Damage report" active="damage">
+  <a href="/app/damage" class="text-sm text-gray-600 hover:text-[#19576d]">← All reports</a>
+
+  <div id="loading" class="mt-8 text-center text-gray-500">Loading…</div>
+  <div id="status-bar" class="mt-3 hidden rounded-md p-3 text-sm" role="alert"></div>
+
+  <article id="report" class="mt-5 hidden space-y-5">
+    <header class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 id="r-category" class="text-2xl font-semibold text-[#19576d]"></h1>
+          <p id="r-occurred" class="mt-1 text-sm text-gray-600"></p>
+          <p id="r-meta" class="mt-1 text-sm text-gray-600"></p>
+        </div>
+        <span id="r-status" class="inline-block rounded-full px-3 py-1 text-sm font-semibold"></span>
+      </div>
+    </header>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Customer</h2>
+      <dl class="mt-3 grid gap-3 sm:grid-cols-3 text-sm">
+        <div><dt class="text-xs uppercase tracking-wide text-gray-500">Name</dt><dd id="r-cname" class="mt-1"></dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-gray-500">Phone</dt><dd id="r-cphone" class="mt-1"></dd></div>
+        <div><dt class="text-xs uppercase tracking-wide text-gray-500">Vehicle reg</dt><dd id="r-reg" class="mt-1 font-mono"></dd></div>
+      </dl>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Description</h2>
+      <p id="r-description" class="mt-2 whitespace-pre-wrap text-sm text-gray-800"></p>
+    </section>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Photos</h2>
+      <div id="r-photos" class="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4"></div>
+      <p id="r-no-photos" class="hidden mt-3 text-sm text-gray-500">No photos attached.</p>
+    </section>
+
+    <form id="resolve-form" class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">Resolution</h2>
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <fieldset>
+          <legend class="text-sm font-medium text-gray-700">Status</legend>
+          <div id="f-status-group" class="mt-2 flex flex-wrap gap-2">
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="open" /> Open
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="in_progress" /> In progress
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="resolved" /> Resolved
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="escalated" /> Escalated
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+              <input type="radio" name="status" value="cancelled" /> Cancelled
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Compensation paid (£)</span>
+          <input id="f-comp" type="number" step="0.01" min="0" inputmode="decimal" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+
+        <label class="block sm:col-span-2">
+          <span class="block text-sm font-medium text-gray-700">Resolution notes</span>
+          <textarea id="f-resolution" rows="3" maxlength="2000" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none"></textarea>
+        </label>
+      </div>
+
+      <div class="mt-5 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          {isSuper && (
+            <button id="delete-btn" type="button" class="rounded-md border border-red-300 px-4 py-2 text-sm text-red-700 hover:bg-red-50">Delete</button>
+          )}
+        </div>
+        <button id="save-btn" type="submit" class="rounded-md bg-[#19576d] px-6 py-2 text-base font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+      </div>
+    </form>
+  </article>
+
+  <script is:inline define:vars={{ reportId: id }}>
+    (function () {
+      var loading = document.getElementById('loading');
+      var report = document.getElementById('report');
+      var status = document.getElementById('status-bar');
+
+      var rCategory = document.getElementById('r-category');
+      var rOccurred = document.getElementById('r-occurred');
+      var rMeta = document.getElementById('r-meta');
+      var rStatus = document.getElementById('r-status');
+      var rCName = document.getElementById('r-cname');
+      var rCPhone = document.getElementById('r-cphone');
+      var rReg = document.getElementById('r-reg');
+      var rDescription = document.getElementById('r-description');
+      var rPhotos = document.getElementById('r-photos');
+      var rNoPhotos = document.getElementById('r-no-photos');
+
+      var resolveForm = document.getElementById('resolve-form');
+      var fComp = document.getElementById('f-comp');
+      var fResolution = document.getElementById('f-resolution');
+      var saveBtn = document.getElementById('save-btn');
+      var deleteBtn = document.getElementById('delete-btn');
+
+      var STATUS_CLASS = {
+        open:        'bg-amber-100 text-amber-800',
+        in_progress: 'bg-blue-100 text-blue-800',
+        resolved:    'bg-green-100 text-green-800',
+        escalated:   'bg-red-100 text-red-800',
+        cancelled:   'bg-gray-100 text-gray-700',
+      };
+      var CATEGORY_LABEL = {
+        scratch: 'Scratch', mirror_damage: 'Mirror damage', dent: 'Dent',
+        paint_damage: 'Paint damage', wheel_damage: 'Wheel damage',
+        interior_damage: 'Interior damage', glass_damage: 'Glass damage',
+        other: 'Other',
+      };
+
+      function categoriesOf(d) {
+        if (d.categories) {
+          try {
+            var p = JSON.parse(d.categories);
+            if (Array.isArray(p) && p.length) return p;
+          } catch (_) { /* fall through */ }
+        }
+        return d.category ? [d.category] : [];
+      }
+
+      function showStatus(msg, kind) {
+        status.textContent = msg;
+        status.className = 'mt-3 rounded-md p-3 text-sm ';
+        if (kind === 'error') status.className += 'border border-red-300 bg-red-50 text-red-800';
+        else if (kind === 'success') status.className += 'border border-green-300 bg-green-50 text-green-800';
+        else status.className += 'border border-gray-300 bg-gray-50 text-gray-700';
+      }
+      function clearStatus() { status.className = 'mt-3 hidden rounded-md p-3 text-sm'; }
+
+      function fmtMoney(pence) {
+        if (pence == null) return '';
+        var pounds = (pence / 100).toFixed(2);
+        return '£' + pounds;
+      }
+
+      function fmtOccurred(iso) {
+        if (!iso) return '';
+        var s = iso.indexOf('T') >= 0 ? iso : iso.replace(' ', 'T');
+        var d = new Date(s);
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleString('en-GB', {
+          weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
+        });
+      }
+
+      function setRadio(name, value) {
+        var el = resolveForm.querySelector('input[name="' + name + '"][value="' + value + '"]');
+        if (el) el.checked = true;
+      }
+
+      function selectedRadio(name) {
+        var el = resolveForm.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+      }
+
+      function render(data) {
+        var r = data.report;
+
+        rCategory.textContent = categoriesOf(r)
+          .map(function (c) { return CATEGORY_LABEL[c] || c; })
+          .join(', ');
+        rOccurred.textContent = 'Occurred: ' + fmtOccurred(r.occurred_at);
+
+        var metaParts = ['Reported by ' + r.reported_by_name];
+        if (r.worker_responsible_name) metaParts.push('Responsible: ' + r.worker_responsible_name);
+        rMeta.textContent = metaParts.join(' · ');
+
+        rStatus.textContent = r.resolution_status.replace('_', ' ');
+        rStatus.className = 'inline-block rounded-full px-3 py-1 text-sm font-semibold ' +
+          (STATUS_CLASS[r.resolution_status] || 'bg-gray-100 text-gray-700');
+
+        rCName.textContent = r.customer_name || '—';
+        rCPhone.textContent = r.customer_phone || '—';
+        rReg.textContent = r.vehicle_registration || '—';
+        rDescription.textContent = r.description;
+
+        rPhotos.innerHTML = '';
+        var keys = data.photo_keys || [];
+        if (keys.length === 0) {
+          rNoPhotos.classList.remove('hidden');
+        } else {
+          rNoPhotos.classList.add('hidden');
+          keys.forEach(function (key, i) {
+            var a = document.createElement('a');
+            a.href = '/api/app/r2/get?key=' + encodeURIComponent(key);
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.className = 'block overflow-hidden rounded-md border border-gray-200';
+            var img = document.createElement('img');
+            img.src = '/api/app/r2/get?key=' + encodeURIComponent(key);
+            img.alt = 'photo ' + (i + 1);
+            img.loading = 'lazy';
+            img.className = 'h-32 w-full object-cover';
+            a.appendChild(img);
+            rPhotos.appendChild(a);
+          });
+        }
+
+        setRadio('status', r.resolution_status);
+        fComp.value = r.compensation_amount != null ? (r.compensation_amount / 100).toFixed(2) : '';
+        fResolution.value = r.resolution || '';
+
+        loading.classList.add('hidden');
+        report.classList.remove('hidden');
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        loading.textContent = 'Loading…';
+        fetch('/api/app/damage/' + reportId, { credentials: 'same-origin' })
+          .then(function (res) { return res.json().then(function (j) { return { ok: res.ok, data: j }; }); })
+          .then(function (r) {
+            if (!r.ok) throw new Error(r.data.error || 'load failed');
+            render(r.data);
+          })
+          .catch(function (err) { loading.textContent = 'Error: ' + err.message; });
+      }
+
+      resolveForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearStatus();
+        var statusValue = selectedRadio('status');
+        if (!statusValue) {
+          showStatus('Pick a status.', 'error');
+          return;
+        }
+        var compRaw = fComp.value;
+        var compPence = compRaw === '' ? null : Math.round(Number(compRaw) * 100);
+
+        var body = {
+          resolution_status: statusValue,
+          resolution: fResolution.value || '',
+          compensation_amount: compPence,
+        };
+
+        saveBtn.disabled = true;
+        saveBtn.textContent = 'Saving…';
+        fetch('/api/app/damage/' + reportId, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              showStatus(res.data.error || 'Save failed.', 'error');
+              saveBtn.disabled = false;
+              saveBtn.textContent = 'Save';
+              return;
+            }
+            showStatus('Saved.', 'success');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+            load();
+          })
+          .catch(function (err) {
+            showStatus('Network error. ' + err.message, 'error');
+            saveBtn.disabled = false;
+            saveBtn.textContent = 'Save';
+          });
+      });
+
+      if (deleteBtn) {
+        deleteBtn.addEventListener('click', function () {
+          if (!confirm('Delete this damage report? Photos remain in R2.')) return;
+          deleteBtn.disabled = true;
+          fetch('/api/app/damage/' + reportId, {
+            method: 'DELETE',
+            credentials: 'same-origin',
+          })
+            .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+            .then(function (res) {
+              if (!res.ok) throw new Error(res.data.error || 'delete failed');
+              window.location.href = '/app/damage';
+            })
+            .catch(function (err) {
+              showStatus(err.message, 'error');
+              deleteBtn.disabled = false;
+            });
+        });
+      }
+
+      load();
+    })();
+  </script>
+</AppLayout>

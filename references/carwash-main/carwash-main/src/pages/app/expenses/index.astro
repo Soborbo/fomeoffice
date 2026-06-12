@@ -1,0 +1,234 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+const isSuper = Astro.locals.user!.role === 'super_admin';
+---
+<AppLayout title="Expenses" active="expenses">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">Expenses</h1>
+    <a
+      href="/app/expenses/new"
+      class="rounded-md bg-[#19576d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#134559]"
+    >New expense</a>
+  </div>
+
+  <section class="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div class="grid gap-3 sm:grid-cols-3">
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">From</span>
+        <input id="f-from" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">To</span>
+        <input id="f-to" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">Category</span>
+        <select id="f-category" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+          <option value="">All</option>
+          <option value="staff">Staff</option>
+          <option value="supplies">Supplies</option>
+          <option value="utilities">Utilities</option>
+          <option value="equipment">Equipment</option>
+          <option value="food">Food</option>
+          <option value="rent">Rent</option>
+          <option value="maintenance">Maintenance</option>
+          <option value="marketing">Marketing</option>
+          <option value="other">Other</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section id="totals-bar" class="mt-4 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div class="flex flex-wrap items-baseline justify-between gap-3">
+      <h2 class="text-base font-semibold text-gray-700">Totals</h2>
+      <span class="text-2xl font-semibold text-[#19576d]" id="grand-total">£0</span>
+    </div>
+    <div id="category-breakdown" class="mt-3 flex flex-wrap gap-2 text-sm"></div>
+  </section>
+
+  <section class="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div id="empty" class="hidden p-8 text-center text-gray-500">No expenses match these filters.</div>
+    <div id="loading" class="p-8 text-center text-gray-500">Loading…</div>
+    <table id="table" class="hidden w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr>
+          <th class="px-3 py-2">Date</th>
+          <th class="px-3 py-2">Category</th>
+          <th class="px-3 py-2">Amount</th>
+          <th class="px-3 py-2">Method</th>
+          <th class="px-3 py-2">Description</th>
+          <th class="px-3 py-2">Vendor / Worker</th>
+          <th class="px-3 py-2">Receipt</th>
+          <th class="px-3 py-2">Recorded by</th>
+          {isSuper && <th class="px-3 py-2 text-end">Actions</th>}
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </section>
+
+  <script is:inline define:vars={{ isSuper }}>
+    (function () {
+      var fFrom = document.getElementById('f-from');
+      var fTo = document.getElementById('f-to');
+      var fCat = document.getElementById('f-category');
+      var grand = document.getElementById('grand-total');
+      var breakdown = document.getElementById('category-breakdown');
+      var tbody = document.getElementById('rows');
+      var table = document.getElementById('table');
+      var loading = document.getElementById('loading');
+      var empty = document.getElementById('empty');
+
+      function fmtMoney(pence) {
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        if (pennies === 0) return sign + '£' + pounds;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function fmtCategory(c) {
+        return c.charAt(0).toUpperCase() + c.slice(1);
+      }
+
+      function buildQuery() {
+        var qs = new URLSearchParams();
+        if (fFrom.value) qs.set('from', fFrom.value);
+        if (fTo.value) qs.set('to', fTo.value);
+        if (fCat.value) qs.set('category', fCat.value);
+        return qs.toString();
+      }
+
+      function render(data) {
+        loading.classList.add('hidden');
+        if (!data.items || data.items.length === 0) {
+          table.classList.add('hidden');
+          empty.classList.remove('hidden');
+        } else {
+          empty.classList.add('hidden');
+          table.classList.remove('hidden');
+        }
+
+        grand.textContent = fmtMoney(data.grand_total) + ' (' + data.count + ')';
+        breakdown.innerHTML = '';
+        (data.totals || []).forEach(function (t) {
+          var pill = document.createElement('span');
+          pill.className = 'rounded-full bg-gray-100 px-3 py-1 text-gray-700';
+          pill.textContent = fmtCategory(t.category) + ': ' + fmtMoney(t.total) + ' · ' + t.count;
+          breakdown.appendChild(pill);
+        });
+
+        tbody.innerHTML = '';
+        (data.items || []).forEach(function (e) {
+          var tr = document.createElement('tr');
+          tr.className = 'hover:bg-gray-50';
+
+          tr.appendChild(td(e.date));
+          tr.appendChild(td(fmtCategory(e.category)));
+          tr.appendChild(td(fmtMoney(e.amount), 'font-semibold text-gray-900'));
+          tr.appendChild(td(e.method.replace('_', ' ')));
+          tr.appendChild(td(e.description || ''));
+
+          var partyText;
+          if (e.category === 'staff') {
+            partyText = e.worker_name ? '→ ' + e.worker_name : '→ (worker)';
+          } else {
+            partyText = e.vendor || '';
+          }
+          tr.appendChild(td(partyText));
+
+          // Receipt thumbnail (or em-dash).
+          var receiptCell = document.createElement('td');
+          receiptCell.className = 'px-3 py-2';
+          if (e.receipt_r2_key) {
+            var a = document.createElement('a');
+            a.href = '/api/app/r2/get?key=' + encodeURIComponent(e.receipt_r2_key);
+            a.target = '_blank';
+            a.rel = 'noopener';
+            a.title = 'Open receipt';
+            var img = document.createElement('img');
+            img.src = '/api/app/r2/get?key=' + encodeURIComponent(e.receipt_r2_key);
+            img.alt = 'receipt';
+            img.loading = 'lazy';
+            img.className = 'h-10 w-10 rounded border border-gray-200 object-cover';
+            a.appendChild(img);
+            receiptCell.appendChild(a);
+          } else {
+            receiptCell.textContent = '—';
+            receiptCell.className += ' text-gray-300';
+          }
+          tr.appendChild(receiptCell);
+
+          tr.appendChild(td(e.recorded_by_name || '—', 'text-gray-500'));
+
+          if (isSuper) {
+            var actionTd = document.createElement('td');
+            actionTd.className = 'px-3 py-2 text-end';
+            var btn = document.createElement('button');
+            btn.type = 'button';
+            btn.className = 'rounded-md border border-red-300 px-2 py-1 text-xs text-red-700 hover:bg-red-50';
+            btn.textContent = 'Delete';
+            btn.addEventListener('click', function () {
+              if (!confirm('Delete this expense' + (e.staff_payment_id ? ' AND its linked staff payment' : '') + '?')) return;
+              btn.disabled = true;
+              fetch('/api/app/expenses/' + e.id, { method: 'DELETE', credentials: 'same-origin' })
+                .then(function (r) {
+                  if (!r.ok) throw new Error('delete failed: ' + r.status);
+                  load();
+                })
+                .catch(function (err) {
+                  alert(err.message);
+                  btn.disabled = false;
+                });
+            });
+            actionTd.appendChild(btn);
+            tr.appendChild(actionTd);
+          }
+
+          tbody.appendChild(tr);
+        });
+      }
+
+      function td(text, extraClass) {
+        var el = document.createElement('td');
+        el.className = 'px-3 py-2 ' + (extraClass || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        table.classList.add('hidden');
+        fetch('/api/app/expenses?' + buildQuery(), { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('list failed: ' + r.status);
+            return r.json();
+          })
+          .then(render)
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      [fFrom, fTo, fCat].forEach(function (el) {
+        el.addEventListener('change', load);
+      });
+
+      // Default: this calendar month.
+      var now = new Date();
+      var firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      fFrom.value = firstOfMonth.toISOString().slice(0, 10);
+      fTo.value = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/London',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(now);
+
+      load();
+    })();
+  </script>
+</AppLayout>

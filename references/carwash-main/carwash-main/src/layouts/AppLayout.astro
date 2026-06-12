@@ -1,0 +1,147 @@
+---
+// Shared shell for /app/* and /admin/* CRM pages.
+// Auth has already happened in middleware — Astro.locals.user is guaranteed
+// for any route that reaches a page using this layout.
+
+import '../styles/global.css';
+import VarianceBanner from '../components/VarianceBanner.astro';
+import { getLocale } from '../paraglide/runtime.js';
+import { m } from '../paraglide/messages.js';
+import { alternateLocale, direction, nativeName } from '../lib/i18n/locale';
+
+interface Props {
+  title: string;
+  // Active nav key — used to highlight the current section in the header.
+  active?: 'dashboard' | 'bookings' | 'daily' | 'expenses' | 'damage' | 'invoices' | 'cash-deposits' | 'staff' | 'board' | 'admin';
+}
+
+const { title, active } = Astro.props;
+const user = Astro.locals.user!;
+const isSuper = user.role === 'super_admin';
+const locale = getLocale();
+const dir = direction(locale);
+const switchTo = alternateLocale(locale);
+const returnTo = Astro.url.pathname + Astro.url.search;
+---
+
+<!doctype html>
+<html lang={locale} dir={dir}>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>{title} — Bristol Car Wash CRM</title>
+  </head>
+  <body class="min-h-screen bg-gray-50 text-gray-900 antialiased">
+    <header class="border-b border-gray-200 bg-white">
+      <div class="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
+        <div class="flex items-center gap-6">
+          <a href="/app" class="text-lg font-semibold text-[#19576d]">Car Wash CRM</a>
+          <nav class="hidden gap-4 text-sm sm:flex">
+            <a
+              href="/app"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'dashboard' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_home()}</a>
+            <a
+              href="/app/bookings"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'bookings' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_bookings()}</a>
+            <a
+              href="/app/daily"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'daily' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_daily()}</a>
+            <a
+              href="/app/expenses"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'expenses' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_expenses()}</a>
+            <a
+              href="/app/damage"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'damage' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_damage()}</a>
+            <a
+              href="/app/invoices"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'invoices' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_invoices()}</a>
+            <a
+              href="/app/cash-deposits"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'cash-deposits' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_cash()}</a>
+            <a
+              href="/board"
+              class:list={[
+                'rounded px-2 py-1',
+                active === 'board' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+              ]}
+            >{m.nav_board()}</a>
+            {isSuper && (
+              <>
+                <a
+                  href="/admin"
+                  class:list={[
+                    'rounded px-2 py-1',
+                    active === 'admin' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+                  ]}
+                >{m.nav_admin()}</a>
+                <a
+                  href="/admin/staff"
+                  class:list={[
+                    'rounded px-2 py-1',
+                    active === 'staff' ? 'bg-gray-100 font-semibold text-[#19576d]' : 'text-gray-700 hover:text-[#19576d]',
+                  ]}
+                >{m.nav_staff()}</a>
+              </>
+            )}
+          </nav>
+        </div>
+        <div class="flex items-center gap-3 text-sm">
+          <span class="hidden text-gray-600 sm:inline">{user.name} <span class="text-gray-400">({user.role})</span></span>
+          <form method="POST" action="/api/locale" class="inline">
+            <input type="hidden" name="locale" value={switchTo} />
+            <input type="hidden" name="return_to" value={returnTo} />
+            <button type="submit" class="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-100" title={`Switch to ${nativeName(switchTo)}`}>{nativeName(switchTo)}</button>
+          </form>
+          <button id="app-logout" type="button" class="whitespace-nowrap rounded-md border border-gray-300 px-3 py-1 text-gray-700 hover:bg-gray-100">{m.common_signout()}</button>
+        </div>
+      </div>
+    </header>
+
+    <VarianceBanner />
+
+    <main class="mx-auto max-w-6xl px-4 py-6">
+      <slot />
+    </main>
+
+    <script is:inline>
+      (function () {
+        var btn = document.getElementById('app-logout');
+        if (!btn) return;
+        btn.addEventListener('click', function () {
+          fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+            .then(function () { window.location.href = '/login'; })
+            .catch(function () { window.location.href = '/login'; });
+        });
+      })();
+    </script>
+  </body>
+</html>

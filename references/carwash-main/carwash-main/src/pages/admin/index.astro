@@ -1,0 +1,373 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../layouts/AppLayout.astro';
+import { m } from '../../paraglide/messages.js';
+---
+<AppLayout title={m.admin_dashboard_title()} active="admin">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">{m.admin_dashboard_title()}</h1>
+    <div class="flex items-center gap-3">
+      <a href="/admin/coupons" class="text-sm text-[#19576d] hover:underline">{m.coupons_title()} →</a>
+      <a href="/admin/xero" class="text-sm text-[#19576d] hover:underline">Xero export →</a>
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        Month
+        <input id="f-month" type="month" class="rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+    </div>
+  </div>
+
+  <div id="loading" class="mt-8 text-center text-gray-500">Loading…</div>
+
+  <div id="dashboard" class="mt-5 hidden space-y-6">
+    <!-- KPI cards -->
+    <section class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-500">Today</p>
+        <p id="k-today-revenue" class="mt-2 text-2xl font-semibold text-gray-900">—</p>
+        <p id="k-today-detail" class="mt-1 text-xs text-gray-500"></p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-500">This week</p>
+        <p id="k-week-revenue" class="mt-2 text-2xl font-semibold text-gray-900">—</p>
+        <p id="k-week-detail" class="mt-1 text-xs text-gray-500"></p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-500">This month — revenue</p>
+        <p id="k-month-revenue" class="mt-2 text-2xl font-semibold text-gray-900">—</p>
+        <p id="k-month-expense" class="mt-1 text-xs text-gray-500"></p>
+      </div>
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <p class="text-xs uppercase tracking-wide text-gray-500">This month — profit</p>
+        <p id="k-month-profit" class="mt-2 text-2xl font-semibold">—</p>
+        <p class="mt-1 text-xs text-gray-500">revenue − expenses</p>
+      </div>
+    </section>
+
+    <!-- Charts -->
+    <section class="grid gap-5 lg:grid-cols-2">
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-700">Revenue vs expense (last 30 days)</h2>
+        <div class="mt-3" style="position:relative;height:280px;">
+          <canvas id="chart-revenue-expense"></canvas>
+        </div>
+      </div>
+
+      <div class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+        <h2 class="text-base font-semibold text-gray-700">Expected vs actual cash (last 14 days)</h2>
+        <p class="mt-1 text-xs text-gray-500">From the daily reconciliation form</p>
+        <div class="mt-3" style="position:relative;height:280px;">
+          <canvas id="chart-expected-actual"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- Cash reconciliation -->
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <h2 class="text-base font-semibold text-gray-700">Cash reconciliation (this month)</h2>
+        <a href="/app/cash-deposits" class="text-xs text-[#19576d] hover:underline">Manage deposits →</a>
+      </div>
+      <div class="mt-3 grid gap-3 sm:grid-cols-3">
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500">Collected</p>
+          <p id="c-collected" class="mt-1 text-xl font-semibold text-gray-900">—</p>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500">Deposited</p>
+          <p id="c-deposited" class="mt-1 text-xl font-semibold text-gray-900">—</p>
+          <p id="c-deposit-count" class="mt-0.5 text-xs text-gray-500"></p>
+        </div>
+        <div>
+          <p class="text-xs uppercase tracking-wide text-gray-500">On hand</p>
+          <p id="c-on-hand" class="mt-1 text-xl font-semibold">—</p>
+          <p class="mt-0.5 text-xs text-gray-500">Collected − deposited</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Staff costs + recent damage -->
+    <section class="grid gap-5 lg:grid-cols-2">
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+          <h2 class="text-base font-semibold text-gray-700">Staff costs (this month)</h2>
+          <a href="/admin/staff" class="text-xs text-[#19576d] hover:underline">View all →</a>
+        </div>
+        <table class="w-full text-sm">
+          <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+            <tr>
+              <th class="px-3 py-2">Name</th>
+              <th class="px-3 py-2">Earned</th>
+              <th class="px-3 py-2">Paid</th>
+              <th class="px-3 py-2">Owed (lifetime)</th>
+            </tr>
+          </thead>
+          <tbody id="staff-rows" class="divide-y divide-gray-100"></tbody>
+        </table>
+        <p id="staff-empty" class="hidden p-4 text-center text-gray-500">No active staff.</p>
+      </div>
+
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+          <h2 class="text-base font-semibold text-gray-700">Open damage reports</h2>
+          <a href="/app/damage" class="text-xs text-[#19576d] hover:underline">View all →</a>
+        </div>
+        <ul id="damage-rows" class="divide-y divide-gray-100 text-sm"></ul>
+        <p id="damage-empty" class="hidden p-4 text-center text-gray-500">No open damage reports.</p>
+      </div>
+    </section>
+  </div>
+
+  <!-- Chart.js v4 (CDN, version-pinned). Loaded only on /admin so the CRM
+       pages that don't need it stay lean. SRI hash omitted intentionally —
+       jsDelivr serves a cacheable, version-pinned URL and we accept their
+       supply-chain trust for this internal-only dashboard. -->
+  <script is:inline src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <script is:inline>
+    (function () {
+      var fMonth = document.getElementById('f-month');
+      var loading = document.getElementById('loading');
+      var dashboard = document.getElementById('dashboard');
+
+      var kTodayRev = document.getElementById('k-today-revenue');
+      var kTodayDetail = document.getElementById('k-today-detail');
+      var kWeekRev = document.getElementById('k-week-revenue');
+      var kWeekDetail = document.getElementById('k-week-detail');
+      var kMonthRev = document.getElementById('k-month-revenue');
+      var kMonthExp = document.getElementById('k-month-expense');
+      var kMonthProfit = document.getElementById('k-month-profit');
+
+      var staffRows = document.getElementById('staff-rows');
+      var staffEmpty = document.getElementById('staff-empty');
+      var damageRows = document.getElementById('damage-rows');
+      var damageEmpty = document.getElementById('damage-empty');
+
+      var cCollected = document.getElementById('c-collected');
+      var cDeposited = document.getElementById('c-deposited');
+      var cOnHand = document.getElementById('c-on-hand');
+      var cDepositCount = document.getElementById('c-deposit-count');
+
+      var revExpChart = null;
+      var expActChart = null;
+
+      function fmtMoney(pence) {
+        if (pence == null) return '—';
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        if (pennies === 0) return sign + '£' + pounds;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function fmtShortDate(iso) {
+        var d = new Date(iso + 'T00:00:00Z');
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleDateString('en-GB', {
+          day: '2-digit', month: 'short', timeZone: 'UTC',
+        });
+      }
+
+      function currentMonth() {
+        var fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London', year: 'numeric', month: '2-digit',
+        });
+        var parts = fmt.formatToParts(new Date());
+        var y = parts.find(function (p) { return p.type === 'year'; }).value;
+        var m = parts.find(function (p) { return p.type === 'month'; }).value;
+        return y + '-' + m;
+      }
+
+      function renderKpis(k) {
+        kTodayRev.textContent = fmtMoney(k.today.revenue);
+        kTodayDetail.textContent =
+          k.today.bookings + ' bookings · ' + k.today.walkins + ' walk-ins · expense ' +
+          fmtMoney(k.today.expense);
+
+        kWeekRev.textContent = fmtMoney(k.week.revenue);
+        kWeekDetail.textContent = 'expense ' + fmtMoney(k.week.expense) + ' · profit ' + fmtMoney(k.week.profit);
+
+        kMonthRev.textContent = fmtMoney(k.month.revenue);
+        kMonthExp.textContent = 'expenses ' + fmtMoney(k.month.expense);
+
+        kMonthProfit.textContent = fmtMoney(k.month.profit);
+        kMonthProfit.className = 'mt-2 text-2xl font-semibold ' +
+          (k.month.profit >= 0 ? 'text-green-700' : 'text-red-700');
+      }
+
+      function renderRevenueExpenseChart(series) {
+        var labels = series.map(function (r) { return fmtShortDate(r.date); });
+        var revenue = series.map(function (r) { return r.revenue / 100; });
+        var expense = series.map(function (r) { return r.expense / 100; });
+
+        if (revExpChart) revExpChart.destroy();
+        var ctx = document.getElementById('chart-revenue-expense').getContext('2d');
+        revExpChart = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Revenue (£)', data: revenue, backgroundColor: 'rgba(25, 87, 109, 0.85)' },
+              { label: 'Expense (£)', data: expense, backgroundColor: 'rgba(185, 28, 28, 0.75)' },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+              y: { beginAtZero: true, ticks: { callback: function (v) { return '£' + v; } } },
+            },
+            plugins: {
+              tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ': £' + ctx.parsed.y.toFixed(2); } } },
+            },
+          },
+        });
+      }
+
+      function renderExpectedActualChart(series) {
+        var labels = series.map(function (r) { return fmtShortDate(r.date); });
+        var expected = series.map(function (r) { return r.expected_cash != null ? r.expected_cash / 100 : null; });
+        var actual = series.map(function (r) { return r.actual_cash != null ? r.actual_cash / 100 : null; });
+
+        if (expActChart) expActChart.destroy();
+        var ctx = document.getElementById('chart-expected-actual').getContext('2d');
+        expActChart = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: labels,
+            datasets: [
+              { label: 'Expected', data: expected, borderColor: 'rgba(25, 87, 109, 0.9)', backgroundColor: 'rgba(25, 87, 109, 0.2)', tension: 0.2, spanGaps: true },
+              { label: 'Actual',   data: actual,   borderColor: 'rgba(34, 139, 34, 0.9)', backgroundColor: 'rgba(34, 139, 34, 0.2)', tension: 0.2, spanGaps: true },
+            ],
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: { y: { beginAtZero: true, ticks: { callback: function (v) { return '£' + v; } } } },
+            plugins: {
+              tooltip: { callbacks: { label: function (ctx) { return ctx.dataset.label + ': ' + (ctx.parsed.y == null ? '—' : '£' + ctx.parsed.y.toFixed(2)); } } },
+            },
+          },
+        });
+      }
+
+      function renderCashFlow(c) {
+        if (!c) {
+          cCollected.textContent = '—';
+          cDeposited.textContent = '—';
+          cOnHand.textContent = '—';
+          cDepositCount.textContent = '';
+          return;
+        }
+        cCollected.textContent = fmtMoney(c.collected);
+        cDeposited.textContent = fmtMoney(c.deposited);
+        cOnHand.textContent = fmtMoney(c.on_hand);
+        cOnHand.className = 'mt-1 text-xl font-semibold ' +
+          (c.on_hand > 0 ? 'text-amber-700' : (c.on_hand < 0 ? 'text-red-700' : 'text-green-700'));
+        cDepositCount.textContent = c.deposit_count + ' deposit' + (c.deposit_count === 1 ? '' : 's');
+      }
+
+      function renderStaff(workers) {
+        staffRows.innerHTML = '';
+        if (!workers || workers.length === 0) {
+          staffEmpty.classList.remove('hidden');
+          return;
+        }
+        staffEmpty.classList.add('hidden');
+        workers.forEach(function (w) {
+          var tr = document.createElement('tr');
+          tr.className = 'cursor-pointer hover:bg-gray-50';
+          tr.addEventListener('click', function () {
+            window.location.href = '/admin/staff/' + w.id;
+          });
+          tr.appendChild(td(w.name, 'font-medium text-[#19576d]'));
+          tr.appendChild(td(fmtMoney(w.earned_this_month)));
+          tr.appendChild(td(fmtMoney(w.paid_this_month)));
+          var owedClass = w.owed_total > 0 ? 'font-semibold text-red-700' : 'text-gray-500';
+          tr.appendChild(td(fmtMoney(w.owed_total), owedClass));
+          staffRows.appendChild(tr);
+        });
+      }
+
+      function renderDamage(items) {
+        damageRows.innerHTML = '';
+        if (!items || items.length === 0) {
+          damageEmpty.classList.remove('hidden');
+          return;
+        }
+        damageEmpty.classList.add('hidden');
+        items.forEach(function (d) {
+          var li = document.createElement('li');
+          li.className = 'cursor-pointer px-5 py-3 hover:bg-gray-50';
+          li.addEventListener('click', function () {
+            window.location.href = '/app/damage/' + d.id;
+          });
+          var top = document.createElement('div');
+          top.className = 'flex items-center justify-between';
+          var left = document.createElement('span');
+          left.className = 'font-medium text-gray-900';
+          var cats = [];
+          if (d.categories) {
+            try {
+              var p = JSON.parse(d.categories);
+              if (Array.isArray(p)) cats = p;
+            } catch (_) { /* fall through */ }
+          }
+          if (cats.length === 0 && d.category) cats = [d.category];
+          left.textContent = cats.map(function (c) { return c.replace('_', ' '); }).join(', ');
+          var right = document.createElement('span');
+          right.className = 'text-xs text-gray-500';
+          right.textContent = d.occurred_at;
+          top.appendChild(left); top.appendChild(right);
+          var bottom = document.createElement('p');
+          bottom.className = 'mt-1 text-xs text-gray-600';
+          bottom.textContent = d.description;
+          li.appendChild(top); li.appendChild(bottom);
+          damageRows.appendChild(li);
+        });
+      }
+
+      function td(text, extraClass) {
+        var el = document.createElement('td');
+        el.className = 'px-3 py-2 ' + (extraClass || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        loading.textContent = 'Loading…';
+        dashboard.classList.add('hidden');
+
+        var qs = fMonth.value ? '?month=' + encodeURIComponent(fMonth.value) : '';
+        fetch('/api/admin/dashboard' + qs, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            renderKpis(data.kpis);
+            if (typeof Chart !== 'undefined') {
+              renderRevenueExpenseChart(data.daily_series);
+              renderExpectedActualChart(data.expected_vs_actual);
+            } else {
+              console.warn('Chart.js not loaded — charts skipped');
+            }
+            renderCashFlow(data.cash_flow);
+            renderStaff(data.staff);
+            renderDamage(data.recent_damage);
+            loading.classList.add('hidden');
+            dashboard.classList.remove('hidden');
+          })
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      fMonth.addEventListener('change', load);
+      fMonth.value = currentMonth();
+      load();
+    })();
+  </script>
+</AppLayout>

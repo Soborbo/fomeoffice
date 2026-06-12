@@ -1,0 +1,204 @@
+---
+export const prerender = false;
+
+// Worker self-service. Uses a stripped-down shell (no AppLayout) so the
+// admin nav doesn't appear for workers. The session middleware has already
+// verified the caller has a valid session.
+import '../../../styles/global.css';
+const user = Astro.locals.user!;
+---
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>My pay — Bristol Car Wash</title>
+  <style is:inline>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; }
+  </style>
+</head>
+<body class="min-h-screen">
+  <header class="bg-[#19576d] text-white p-4 flex items-center justify-between sticky top-0 z-10">
+    <div>
+      <p class="text-sm opacity-80">Signed in as</p>
+      <h1 class="text-lg font-semibold" id="me-name">{user.name}</h1>
+    </div>
+    <button id="me-logout" type="button" class="rounded-md bg-white/15 hover:bg-white/25 px-3 py-1.5 text-sm font-semibold">Sign out</button>
+  </header>
+
+  <main class="mx-auto max-w-2xl p-4 space-y-4">
+    <div id="loading" class="text-center text-gray-500 py-12">Loading…</div>
+    <div id="error" class="hidden rounded-lg border border-red-200 bg-red-50 p-4 text-red-800"></div>
+
+    <div id="content" class="hidden space-y-4">
+      <!-- Headline cards -->
+      <section class="grid grid-cols-2 gap-3">
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <p class="text-xs uppercase tracking-wide text-gray-500">This month earned</p>
+          <p id="m-earned" class="mt-1 text-2xl font-bold text-[#19576d]">—</p>
+        </div>
+        <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+          <p class="text-xs uppercase tracking-wide text-gray-500">This month paid</p>
+          <p id="m-paid" class="mt-1 text-2xl font-bold text-gray-900">—</p>
+        </div>
+      </section>
+
+      <div class="bg-amber-50 rounded-lg border-2 border-amber-200 p-4">
+        <p class="text-xs uppercase tracking-wide text-amber-900">Owed (lifetime)</p>
+        <p id="m-owed" class="mt-1 text-3xl font-bold text-amber-900">—</p>
+        <p class="mt-1 text-xs text-amber-800">Earned across all time minus everything paid out so far.</p>
+      </div>
+
+      <!-- Days worked summary -->
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <h2 class="text-base font-semibold text-gray-700">This month</h2>
+        <dl class="mt-3 grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <dt class="text-xs uppercase text-gray-500">Full days</dt>
+            <dd id="m-full" class="mt-1 text-lg font-semibold text-gray-900">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase text-gray-500">Half days</dt>
+            <dd id="m-half" class="mt-1 text-lg font-semibold text-gray-900">—</dd>
+          </div>
+          <div>
+            <dt class="text-xs uppercase text-gray-500">Off</dt>
+            <dd id="m-off" class="mt-1 text-lg font-semibold text-gray-500">—</dd>
+          </div>
+        </dl>
+      </section>
+
+      <!-- Attendance log -->
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <h2 class="text-base font-semibold text-gray-700 px-4 py-3 border-b border-gray-200">Recent days</h2>
+        <ul id="att-list" class="divide-y divide-gray-100 text-sm"></ul>
+        <p id="att-empty" class="hidden p-4 text-center text-gray-500">No attendance recorded yet.</p>
+      </section>
+
+      <!-- Payment log -->
+      <section class="bg-white rounded-lg shadow-sm border border-gray-200">
+        <h2 class="text-base font-semibold text-gray-700 px-4 py-3 border-b border-gray-200">Recent payments</h2>
+        <ul id="pay-list" class="divide-y divide-gray-100 text-sm"></ul>
+        <p id="pay-empty" class="hidden p-4 text-center text-gray-500">No payments recorded yet.</p>
+      </section>
+    </div>
+  </main>
+
+  <script is:inline>
+    (function () {
+      var loading = document.getElementById('loading');
+      var content = document.getElementById('content');
+      var errorBox = document.getElementById('error');
+      var mEarned = document.getElementById('m-earned');
+      var mPaid = document.getElementById('m-paid');
+      var mOwed = document.getElementById('m-owed');
+      var mFull = document.getElementById('m-full');
+      var mHalf = document.getElementById('m-half');
+      var mOff = document.getElementById('m-off');
+      var attList = document.getElementById('att-list');
+      var attEmpty = document.getElementById('att-empty');
+      var payList = document.getElementById('pay-list');
+      var payEmpty = document.getElementById('pay-empty');
+
+      function fmtMoney(pence) {
+        if (pence == null) return '—';
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        return sign + '£' + pounds + (pennies > 0 ? ('.' + (pennies < 10 ? '0' + pennies : pennies)) : '');
+      }
+      function fmtDate(iso) {
+        var d = new Date(iso + 'T00:00:00Z');
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleDateString('en-GB', {
+          weekday: 'short', day: '2-digit', month: 'short', timeZone: 'UTC',
+        });
+      }
+
+      function showError(msg) {
+        loading.classList.add('hidden');
+        errorBox.textContent = msg;
+        errorBox.classList.remove('hidden');
+      }
+
+      function renderAttendance(items) {
+        attList.innerHTML = '';
+        if (!items || items.length === 0) {
+          attEmpty.classList.remove('hidden');
+          return;
+        }
+        attEmpty.classList.add('hidden');
+        items.forEach(function (a) {
+          var li = document.createElement('li');
+          li.className = 'flex items-center justify-between px-4 py-3';
+          var left = document.createElement('div');
+          left.innerHTML = '<p class="font-medium text-gray-900">' + fmtDate(a.date) + '</p>' +
+            '<p class="text-xs text-gray-500">' + (a.status || '') + '</p>';
+          var right = document.createElement('p');
+          right.className = 'tabular-nums font-semibold ' + (a.pay_amount > 0 ? 'text-[#19576d]' : 'text-gray-400');
+          right.textContent = fmtMoney(a.pay_amount);
+          li.appendChild(left);
+          li.appendChild(right);
+          attList.appendChild(li);
+        });
+      }
+
+      function renderPayments(items) {
+        payList.innerHTML = '';
+        if (!items || items.length === 0) {
+          payEmpty.classList.remove('hidden');
+          return;
+        }
+        payEmpty.classList.add('hidden');
+        items.forEach(function (p) {
+          var li = document.createElement('li');
+          li.className = 'flex items-center justify-between px-4 py-3';
+          var left = document.createElement('div');
+          left.innerHTML = '<p class="font-medium text-gray-900">' + fmtDate(p.paid_at) + '</p>' +
+            '<p class="text-xs text-gray-500">' + (p.method || '').replace('_', ' ') + (p.notes ? ' · ' + p.notes : '') + '</p>';
+          var right = document.createElement('p');
+          right.className = 'tabular-nums font-semibold text-green-700';
+          right.textContent = fmtMoney(p.amount);
+          li.appendChild(left);
+          li.appendChild(right);
+          payList.appendChild(li);
+        });
+      }
+
+      function load() {
+        fetch('/api/app/staff/me', { credentials: 'same-origin' })
+          .then(function (r) {
+            if (r.status === 401) { window.location.href = '/staff/login'; return null; }
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            if (!data) return;
+            var s = data.summary || {};
+            mEarned.textContent = fmtMoney(s.earned ?? 0);
+            mPaid.textContent = fmtMoney(s.paid ?? 0);
+            mOwed.textContent = fmtMoney(s.owed_total ?? 0);
+            mFull.textContent = String(s.full_days ?? 0);
+            mHalf.textContent = String(s.half_days ?? 0);
+            mOff.textContent = String(s.off_days ?? 0);
+            renderAttendance(data.attendance);
+            renderPayments(data.payments);
+            loading.classList.add('hidden');
+            content.classList.remove('hidden');
+          })
+          .catch(function (err) { showError('Could not load your data — ' + err.message); });
+      }
+
+      document.getElementById('me-logout').addEventListener('click', function () {
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'same-origin' })
+          .then(function () { window.location.href = '/staff/login'; })
+          .catch(function () { window.location.href = '/staff/login'; });
+      });
+
+      load();
+    })();
+  </script>
+</body>
+</html>

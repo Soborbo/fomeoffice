@@ -1,0 +1,61 @@
+---
+import { getServiceBySlug } from '../data/services';
+
+interface Props {
+  currentSlug: string;
+  relatedSlugs: string[];
+}
+
+const { currentSlug, relatedSlugs } = Astro.props;
+
+const relatedServices = relatedSlugs
+  .filter(slug => slug !== currentSlug)
+  .map(slug => getServiceBySlug(slug))
+  .filter(Boolean)
+  .slice(0, 3);
+---
+
+{relatedServices.length > 0 && (
+  <section class="py-16 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">More Services</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900">
+          You May Also Like
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-6">
+        {relatedServices.map((service) => (
+          <a
+            href={`/${service!.slug}/`}
+            class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow block group border border-gray-100"
+          >
+            <div class="relative overflow-hidden">
+              <picture>
+                <source srcset={`${service!.heroImage}.webp`} type="image/webp" />
+                <img
+                  src={`${service!.heroImage}.jpg`}
+                  alt={service!.title}
+                  class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </picture>
+            </div>
+            <div class="p-6">
+              <h3 class="text-lg font-semibold text-gray-900 mb-2 group-hover:text-purple transition-colors">
+                {service!.shortName}
+              </h3>
+              <p class="text-gray-600 text-sm line-clamp-2">{service!.description}</p>
+              <span class="inline-flex items-center gap-1 text-primary font-medium text-sm mt-3">
+                Learn More
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                </svg>
+              </span>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+)}

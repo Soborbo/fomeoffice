@@ -1,0 +1,185 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+const id = Astro.params.id;
+---
+<AppLayout title="Staff profile" active="staff">
+  <div class="flex items-center justify-between gap-3">
+    <a href="/admin/staff" class="text-sm text-gray-600 hover:text-[#19576d]">← All staff</a>
+    <label class="flex items-center gap-2 text-sm text-gray-700">
+      Month
+      <input id="f-month" type="month" class="rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+    </label>
+  </div>
+
+  <div id="loading" class="mt-8 text-center text-gray-500">Loading…</div>
+
+  <article id="profile" class="mt-5 hidden space-y-5">
+    <header class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h1 id="p-name" class="text-2xl font-semibold text-[#19576d]"></h1>
+      <p id="p-meta" class="mt-1 text-sm text-gray-600"></p>
+      <p id="p-pay" class="mt-1 text-sm text-gray-600"></p>
+    </header>
+
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-gray-700">This month</h2>
+      <dl class="mt-3 grid gap-3 sm:grid-cols-4">
+        <div class="rounded-md bg-gray-50 p-3">
+          <dt class="text-xs uppercase tracking-wide text-gray-500">Days worked</dt>
+          <dd id="p-days" class="mt-1 text-xl font-semibold text-gray-900"></dd>
+        </div>
+        <div class="rounded-md bg-gray-50 p-3">
+          <dt class="text-xs uppercase tracking-wide text-gray-500">Earned</dt>
+          <dd id="p-earned" class="mt-1 text-xl font-semibold text-gray-900"></dd>
+        </div>
+        <div class="rounded-md bg-gray-50 p-3">
+          <dt class="text-xs uppercase tracking-wide text-gray-500">Paid</dt>
+          <dd id="p-paid" class="mt-1 text-xl font-semibold text-gray-900"></dd>
+        </div>
+        <div class="rounded-md bg-gray-50 p-3">
+          <dt class="text-xs uppercase tracking-wide text-gray-500">Owed (lifetime)</dt>
+          <dd id="p-owed" class="mt-1 text-xl font-semibold"></dd>
+        </div>
+      </dl>
+    </section>
+
+    <section class="grid gap-5 lg:grid-cols-2">
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <h2 class="border-b border-gray-200 px-5 py-3 text-base font-semibold text-gray-700">Attendance</h2>
+        <ul id="p-attendance" class="divide-y divide-gray-100 text-sm"></ul>
+        <p id="p-attendance-empty" class="hidden p-4 text-center text-gray-500">No attendance recorded.</p>
+      </div>
+
+      <div class="rounded-lg border border-gray-200 bg-white shadow-sm">
+        <h2 class="border-b border-gray-200 px-5 py-3 text-base font-semibold text-gray-700">Payments</h2>
+        <ul id="p-payments" class="divide-y divide-gray-100 text-sm"></ul>
+        <p id="p-payments-empty" class="hidden p-4 text-center text-gray-500">No payments recorded.</p>
+      </div>
+    </section>
+  </article>
+
+  <script is:inline define:vars={{ workerId: id }}>
+    (function () {
+      var fMonth = document.getElementById('f-month');
+      var loading = document.getElementById('loading');
+      var profile = document.getElementById('profile');
+
+      var pName = document.getElementById('p-name');
+      var pMeta = document.getElementById('p-meta');
+      var pPay = document.getElementById('p-pay');
+      var pDays = document.getElementById('p-days');
+      var pEarned = document.getElementById('p-earned');
+      var pPaid = document.getElementById('p-paid');
+      var pOwed = document.getElementById('p-owed');
+      var pAttendance = document.getElementById('p-attendance');
+      var pAttendanceEmpty = document.getElementById('p-attendance-empty');
+      var pPayments = document.getElementById('p-payments');
+      var pPaymentsEmpty = document.getElementById('p-payments-empty');
+
+      function fmtMoney(pence) {
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        if (pennies === 0) return sign + '£' + pounds;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function currentMonth() {
+        var fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London', year: 'numeric', month: '2-digit',
+        });
+        var parts = fmt.formatToParts(new Date());
+        var y = parts.find(function (p) { return p.type === 'year'; }).value;
+        var m = parts.find(function (p) { return p.type === 'month'; }).value;
+        return y + '-' + m;
+      }
+
+      function row(left, right, rightClass) {
+        var li = document.createElement('li');
+        li.className = 'flex items-center justify-between px-5 py-2';
+        var l = document.createElement('span');
+        l.className = 'text-gray-700';
+        l.textContent = left;
+        var r = document.createElement('span');
+        r.className = (rightClass || 'font-medium text-gray-900');
+        r.textContent = right;
+        li.appendChild(l);
+        li.appendChild(r);
+        return li;
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        loading.textContent = 'Loading…';
+        profile.classList.add('hidden');
+
+        var qs = fMonth.value ? '?month=' + encodeURIComponent(fMonth.value) : '';
+        fetch('/api/admin/staff/' + workerId + qs, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            var w = data.worker;
+            var s = data.summary;
+
+            pName.textContent = w.name;
+            pMeta.textContent = w.role + (w.email ? ' · ' + w.email : '') +
+              (w.phone ? ' · ' + w.phone : '') +
+              (w.hired_at ? ' · hired ' + w.hired_at : '');
+            pPay.textContent = 'Day rate: ' + fmtMoney(w.full_day_pay) +
+              ' (full) / ' + fmtMoney(w.half_day_pay) + ' (half)';
+
+            var dayParts = [];
+            if (s.full_days) dayParts.push(s.full_days + ' full');
+            if (s.half_days) dayParts.push(s.half_days + ' half');
+            if (s.overtime_days) dayParts.push(s.overtime_days + ' overtime');
+            pDays.textContent = dayParts.length ? dayParts.join(', ') : '0';
+
+            pEarned.textContent = fmtMoney(s.earned);
+            pPaid.textContent = fmtMoney(s.paid);
+            pOwed.textContent = fmtMoney(s.owed_lifetime);
+            pOwed.className = (s.owed_lifetime > 0 ? 'mt-1 text-xl font-semibold text-red-700' : 'mt-1 text-xl font-semibold text-gray-900');
+
+            pAttendance.innerHTML = '';
+            if (data.attendance.length === 0) {
+              pAttendanceEmpty.classList.remove('hidden');
+            } else {
+              pAttendanceEmpty.classList.add('hidden');
+              data.attendance.forEach(function (a) {
+                pAttendance.appendChild(
+                  row(a.date + ' — ' + a.shift, fmtMoney(a.pay_amount)),
+                );
+              });
+            }
+
+            pPayments.innerHTML = '';
+            if (data.payments.length === 0) {
+              pPaymentsEmpty.classList.remove('hidden');
+            } else {
+              pPaymentsEmpty.classList.add('hidden');
+              data.payments.forEach(function (p) {
+                var label = p.paid_at + ' — ' + p.method.replace('_', ' ');
+                if (p.covers_period_start && p.covers_period_end) {
+                  label += ' (' + p.covers_period_start + ' → ' + p.covers_period_end + ')';
+                }
+                pPayments.appendChild(row(label, fmtMoney(p.amount)));
+              });
+            }
+
+            loading.classList.add('hidden');
+            profile.classList.remove('hidden');
+          })
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      fMonth.addEventListener('change', load);
+      fMonth.value = currentMonth();
+      load();
+    })();
+  </script>
+</AppLayout>

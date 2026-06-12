@@ -1,0 +1,843 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+import FoamBubbles from '../components/FoamBubbles.astro';
+import { SERVICE_PAGES, getFeaturedServices } from '../data/services';
+import {
+  TAGLINE, TAGLINE_SECONDARY, MOTTO, QUALITY_LINE,
+  PHONE_DISPLAY, PHONE, EMAIL, ADDRESS,
+} from '../data/site-config';
+
+const schedule = [
+  { day: 'Monday', hours: '09.00 – 19.00' },
+  { day: 'Tuesday', hours: '09.00 – 19.00' },
+  { day: 'Wednesday', hours: '09.00 – 19.00' },
+  { day: 'Thursday', hours: '09.00 – 19.00' },
+  { day: 'Friday', hours: '09.00 – 19.00' },
+  { day: 'Saturday', hours: '09.00 – 19.00' },
+  { day: 'Sunday', hours: '09.00 – 17.00' },
+];
+
+// The career ladder - office-themed wash packages (prices match services.ts)
+const pricingPlans = [
+  {
+    id: 1,
+    name: 'Probation Wash',
+    subtitle: 'Wash & wax - the trial period',
+    features: ['Snow foam wash & hand dry', 'Windows inside & out', 'Tyre dressing (shine)', 'Door line cleaning'],
+    time: '~10 min',
+    prices: { car: 10, suv: 15, van: 15 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 2,
+    name: 'Junior Wash',
+    subtitle: 'First promotion - adds the hoover',
+    features: ['Everything in the Probation Wash', 'Hoover - seats, carpets, boot'],
+    time: '~20 min',
+    prices: { car: 20, suv: 25, van: 25 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 3,
+    name: 'Team Leader Wash',
+    subtitle: 'Now with responsibilities',
+    features: ['Everything in the Junior Wash', 'All plastics cleaned & treated', 'Premium Autosmart materials'],
+    time: '~30-35 min',
+    prices: { car: 25, suv: 30, van: 30 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 4,
+    name: 'Performance Review Polish',
+    subtitle: 'Wash & hand polish',
+    features: ['Full exterior wash', 'Hand polish (cream polish)', 'Removes minor scratches', 'Restores shine - outside only'],
+    time: '~30 min wash + 1 hr polish',
+    prices: { car: 40, suv: 50, van: 50 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 5,
+    name: 'Employee of the Month',
+    subtitle: 'Our best-value package',
+    features: ['Wash, dry & polish', 'Hoover - seats, carpets, boot', 'Windows inside & out', 'Dashboard & interior polish'],
+    prices: { car: 35, suv: 45, van: 45 },
+    popular: true,
+    premium: false,
+  },
+  {
+    id: 6,
+    name: 'Managing Director Valet',
+    subtitle: 'Full valet - top of the company',
+    features: ['Full wash, interior & exterior', 'Specialist chemicals throughout', 'All surfaces treated & shiny', 'Engine clean available'],
+    time: '~5 hours',
+    prices: { car: 60, suv: 70, van: 70 },
+    popular: false,
+    premium: true,
+  },
+];
+
+const vehicleTypes = [
+  { id: 'car', label: 'Small Car', image: '/images/small-car.jpg' },
+  { id: 'suv', label: 'Van / SUV', image: '/images/suv.jpg' },
+  { id: 'van', label: 'Luton', image: '/images/luton.jpg' },
+];
+
+const testimonials = [
+  {
+    name: 'Lee Turner',
+    text: 'Brought my X5 for a full valet that we won in a charity auction. The car has never looked cleaner. I was surprised!',
+    rating: 5,
+  },
+  {
+    name: 'Katie Wilkins',
+    text: 'A brilliant, efficient 5 star service. All my family go there now. Brilliant service! The best!',
+    rating: 5,
+  },
+  {
+    name: 'Charles Russell-Smith',
+    text: 'Excellent quick service at this car wash. They take the time to do a complete clean even inside door trims and the guys are always polite and efficient.',
+    rating: 5,
+  },
+  {
+    name: 'Danielle Price',
+    text: 'Friendly staff that pay attention to detail! Would highly recommend them for a clean. Also, a waiting room for your convenience.',
+    rating: 5,
+  },
+  {
+    name: 'Natalia Mielewczyk',
+    text: "I'm beyond impressed with the level of service. From the moment I arrived, the staff was friendly, professional, and thorough.",
+    rating: 5,
+  },
+  {
+    name: 'Jawad Burhan',
+    text: 'One of the best car wash in Bristol! Indoor waiting area! Great customer service!',
+    rating: 5,
+  },
+];
+
+const faqs = [
+  {
+    question: 'Do I need to book in advance?',
+    answer: 'No booking required! Simply drive in during our opening hours. For larger vehicles or full valets, we recommend calling ahead to ensure minimal wait time.',
+  },
+  {
+    question: 'How long does a full valet take?',
+    answer: 'A full valet typically takes around 5 hours as the seats and interior need time to dry. We recommend dropping off your car and collecting it later. Last full valet booking is at 2pm to allow drying time before closing.',
+  },
+  {
+    question: 'Why is everything named like an office?',
+    answer: "Because your car works hard and deserves a proper workplace. The packages climb our career ladder - from the quick Probation Wash to the Managing Director Valet. The names are for fun; the cleaning is completely serious.",
+  },
+  {
+    question: 'Do you really clean caravans?',
+    answer: 'Yes - the Caravan Division is one of our specialities. Exterior washes from £20, machine polish, interior cleaning, black streak removal, and motorhomes are welcome too.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept cash, all major credit and debit cards, and contactless payments including Apple Pay and Google Pay.',
+  },
+];
+
+const featuredServices = getFeaturedServices();
+
+const departmentIcons: Record<string, string> = {
+  'ceramic-coating-bristol': 'M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z',
+  'caravan-cleaning-bristol': 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12',
+  'car-wash-bristol': 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.125-.504 1.125-1.125V14.25m-17.25 0h17.25m-17.25 0a3 3 0 01.75-1.985l1.913-2.25c.36-.424.89-.665 1.444-.665h9.036c.554 0 1.084.24 1.444.665l1.913 2.25a3 3 0 01.75 1.985',
+  'van-wash-bristol': 'M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V6.75c0-.621.504-1.125 1.125-1.125h9.75c.621 0 1.125.504 1.125 1.125v10.875m-12 0h12m4.5 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h.375c.621 0 1.125-.504 1.125-1.125v-3.838a1.125 1.125 0 00-.329-.795l-2.413-2.413a1.125 1.125 0 00-.795-.329H14.25',
+  'car-detailing-bristol': 'M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09zM18.259 8.715L18 9.75l-.259-1.035a3.375 3.375 0 00-2.455-2.456L14.25 6l1.036-.259a3.375 3.375 0 002.455-2.456L18 2.25l.259 1.035a3.375 3.375 0 002.456 2.456L21.75 6l-1.035.259a3.375 3.375 0 00-2.456 2.456z',
+  'full-valet-bristol': 'M16.5 18.75h-9m9 0a3 3 0 013 3h-15a3 3 0 013-3m9 0v-3.375c0-.621-.503-1.125-1.125-1.125h-.871M7.5 18.75v-3.375c0-.621.504-1.125 1.125-1.125h.872m5.007 0H9.497m5.007 0a7.454 7.454 0 01-.982-3.172M9.497 14.25a7.454 7.454 0 00.981-3.172M5.85 8.25h12.3m-12.3 0a3 3 0 110-6h12.3a3 3 0 110 6m-12.3 0v.038c0 1.066.27 2.07.748 2.946m11.552-2.984v.038c0 1.066-.27 2.07-.748 2.946',
+  'headlight-restoration-bristol': 'M12 18v-5.25m0 0a6.01 6.01 0 001.5-.189m-1.5.189a6.01 6.01 0 01-1.5-.189m3.75 7.478a12.06 12.06 0 01-4.5 0m3.75 2.383a14.406 14.406 0 01-3 0M14.25 18v-.192c0-.983.658-1.823 1.508-2.316a7.5 7.5 0 10-7.517 0c.85.493 1.509 1.333 1.509 2.316V18',
+};
+---
+
+<Layout title={`Car Wash Bristol - ${TAGLINE}`}>
+  <!-- Hero Section - the office reception -->
+  <section class="relative overflow-hidden min-h-[calc(100vh-88px)] flex items-center bg-gradient-to-br from-dark via-primary to-secondary">
+    <FoamBubbles />
+    <div class="container mx-auto px-4 py-16 relative z-10">
+      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <!-- Text Content -->
+        <div class="order-2 lg:order-1">
+          <p class="memo-label mb-4 text-foam-mist! md:text-left">Foam Office &middot; Southmead, Bristol</p>
+          <h1 class="text-4xl md:text-5xl lg:text-6xl text-white leading-tight mb-6">
+            Your car works hard.<br />
+            <span class="text-foam-mist">Give it a day at the office.</span>
+          </h1>
+          <p class="text-blue-100 text-lg mb-3 max-w-lg md:text-left mx-auto md:mx-0">
+            {TAGLINE_SECONDARY}. Hand wash, valeting, ceramic coating and caravan cleaning on Southmead Road.
+          </p>
+          <p class="font-memo text-sm text-foam-mist mb-8 max-w-lg md:text-left mx-auto md:mx-0 uppercase tracking-widest">
+            {MOTTO}
+          </p>
+          <!-- CTA Buttons -->
+          <div class="flex flex-col sm:flex-row gap-3 mb-10">
+            <button type="button" onclick="openBookingModal()" class="bg-accent text-primary px-8 py-3 rounded-full font-semibold hover:bg-accent-hover transition-colors text-center">
+              Vehicle Check-In
+            </button>
+            <a href={ADDRESS.mapUrl} target="_blank" rel="noopener noreferrer" class="border-2 border-white/70 text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-primary transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Directions
+            </a>
+          </div>
+          <!-- Approved stamp + review -->
+          <div class="flex flex-wrap items-center gap-6">
+            <span class="stamp stamp-light text-sm">Foam Office Approved</span>
+            <div class="flex items-center gap-3 bg-white/10 backdrop-blur rounded-2xl px-4 py-3">
+              <div class="flex text-accent">
+                {[...Array(5)].map(() => (
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                ))}
+              </div>
+              <p class="text-white text-sm">4.9 on Google &middot; 31 reviews</p>
+            </div>
+          </div>
+        </div>
+        <!-- Hero badge card -->
+        <div class="relative pb-5 order-1 lg:order-2 max-w-md mx-auto w-full">
+          <div class="id-badge p-5 pt-7">
+            <p class="font-memo text-[11px] uppercase tracking-[0.2em] text-gray-500 text-center mb-3">Foam Office &middot; Staff Pass</p>
+            <picture>
+              <source srcset="/images/Bristol-Car-Valeting.webp" type="image/webp" />
+              <img
+                src="/images/Bristol-Car-Valeting.jpg"
+                alt="Freshly valeted car at Foam Office, Southmead Road, Bristol"
+                class="rounded-lg w-full object-cover"
+                loading="eager"
+              />
+            </picture>
+            <div class="mt-4 flex items-center justify-between">
+              <div>
+                <p class="font-heading font-extrabold text-primary text-lg leading-tight">Your Car</p>
+                <p class="text-xs text-gray-500">Role: Employee of the Month (pending)</p>
+              </div>
+              <span class="font-memo text-[10px] uppercase tracking-widest bg-foam-light text-secondary px-2 py-1 rounded">Currently<br/>in a wash</span>
+            </div>
+          </div>
+          <!-- Stats Cards -->
+          <div class="stat-card absolute -top-4 -right-2 md:-right-6 bg-white rounded-xl shadow-lg p-4 z-20">
+            <div class="text-center">
+              <span class="text-3xl font-bold text-secondary count-number" data-target="3200">3,200+</span>
+              <p class="text-sm text-gray-600">Cars on payroll</p>
+            </div>
+          </div>
+          <div class="stat-card absolute -bottom-2 -left-2 md:-left-6 bg-white rounded-xl shadow-lg p-4 z-20">
+            <div class="flex items-center gap-2">
+              <span class="text-3xl font-bold text-gray-900 count-number" data-target="4.9">4.9</span>
+              <div>
+                <div class="flex text-accent">
+                  {[...Array(5)].map(() => (
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p class="text-xs text-gray-600">Annual review score</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Memo strip -->
+  <div class="bg-accent py-3 overflow-hidden">
+    <div class="container mx-auto px-4 flex flex-wrap items-center justify-center gap-x-10 gap-y-1 text-primary font-memo text-xs md:text-sm uppercase tracking-wider text-center">
+      <span>Memo: every car deserves a promotion</span>
+      <span class="hidden md:inline">{QUALITY_LINE}</span>
+      <span class="hidden lg:inline">Dress code: spotless</span>
+    </div>
+  </div>
+
+  <!-- About Section - the induction -->
+  <section id="about" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="relative">
+          <picture>
+            <source srcset="/images/Bristol-van-wash.webp" type="image/webp" />
+            <img
+              src="/images/Bristol-van-wash.jpg"
+              alt="Van being hand washed at Foam Office Bristol"
+              class="rounded-2xl shadow-xl"
+              loading="lazy"
+            />
+          </picture>
+          <picture class="absolute -bottom-8 -right-8 hidden md:block">
+            <source srcset="/images/Bristol-pressure-wash-car.webp" type="image/webp" />
+            <img
+              src="/images/Bristol-pressure-wash-car.jpg"
+              alt="Snow foam pre-wash at Foam Office Bristol"
+              class="rounded-2xl shadow-xl border-4 border-white w-[300px] h-[250px] object-cover"
+              loading="lazy"
+            />
+          </picture>
+        </div>
+        <div>
+          <p class="memo-label mb-4">Welcome to the office</p>
+          <h2 class="text-3xl md:text-4xl text-gray-900 mb-6">
+            Where dirty cars come to do an honest day's work
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Foam Office is the office-themed hand car wash on Southmead Road, Bristol. The idea is simple: your car gets checked in, spends its working day being snow-foamed, hand washed, hoovered and polished by people who take cleaning seriously, and clocks out spotless. Cars, vans, SUVs, caravans and motorhomes are all on the payroll.
+          </p>
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            {['All vehicles welcome', 'Gentle on paintwork', 'Full attention to detail', 'Spotless finish, every time', 'No cheap chemicals', 'Fresh interior feeling'].map((perk) => (
+              <div class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+                <span class="text-sm text-gray-700">{perk}</span>
+              </div>
+            ))}
+          </div>
+          <div class="flex flex-wrap items-center gap-6">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-foam-light rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Front desk</p>
+                <p class="font-semibold text-gray-900">{PHONE_DISPLAY}</p>
+              </div>
+            </div>
+            <a href="/#pricing" class="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-secondary transition-colors">
+              View the Pay Grades
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Departments (services) -->
+  <section id="services" class="py-20 bg-foam-light">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="memo-label mb-4">Our departments</p>
+        <h2 class="text-3xl md:text-4xl text-gray-900">
+          Every floor of the building
+        </h2>
+        <p class="text-gray-600 mt-4 max-w-2xl mx-auto">From the quick wash on the ground floor to the executive suite of ceramic coating - pick the department your car needs.</p>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {SERVICE_PAGES.map((service) => (
+          <a href={`/${service.slug}/`} class={`rounded-2xl p-6 block group transition-all hover:-translate-y-1 hover:shadow-xl ${
+            service.featured ? 'bg-primary text-white shadow-lg' : 'bg-white shadow-sm border border-gray-100'
+          }`}>
+            <div class={`w-12 h-12 rounded-xl flex items-center justify-center mb-4 ${service.featured ? 'bg-white/15' : 'bg-foam-light'}`}>
+              <svg xmlns="http://www.w3.org/2000/svg" class={`h-6 w-6 ${service.featured ? 'text-foam-mist' : 'text-secondary'}`} fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" d={departmentIcons[service.slug]} />
+              </svg>
+            </div>
+            <p class={`font-memo text-[11px] uppercase tracking-[0.15em] mb-1 ${service.featured ? 'text-foam-mist' : 'text-secondary'}`}>{service.department}</p>
+            <h3 class={`text-lg font-semibold mb-2 ${service.featured ? 'text-white' : 'text-gray-900'}`}>{service.shortName}</h3>
+            <p class={`text-sm mb-4 ${service.featured ? 'text-blue-100' : 'text-gray-600'}`}>{service.metaDescription.split('.')[0]}.</p>
+            <span class={`text-sm font-medium inline-flex items-center gap-1 ${service.featured ? 'text-accent' : 'text-secondary'}`}>
+              Visit department
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 transition-transform group-hover:translate-x-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+              </svg>
+            </span>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Executive Services - ceramic coating & caravan division -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="memo-label mb-4">Executive services</p>
+        <h2 class="text-3xl md:text-4xl text-gray-900">The corner offices</h2>
+      </div>
+      <div class="grid lg:grid-cols-2 gap-8">
+        <!-- Ceramic Coating panel -->
+        <div class="relative rounded-3xl overflow-hidden bg-gradient-to-br from-dark to-primary text-white p-8 md:p-10 flex flex-col">
+          <span class="stamp stamp-light text-xs self-start mb-6">New department</span>
+          <p class="font-memo text-xs uppercase tracking-[0.2em] text-foam-mist mb-2">The Permanent Contract</p>
+          <h3 class="text-2xl md:text-3xl font-heading font-extrabold mb-4">Ceramic Coating</h3>
+          <p class="text-blue-100 mb-6 max-w-md">
+            Most washes are temporary placements. Ceramic coating signs a long-term deal with your paintwork: years of hydrophobic protection, deep gloss, and easier washing - with machine polish preparation included.
+          </p>
+          <ul class="space-y-2 mb-8 text-sm text-blue-100">
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Water and grime bead straight off</li>
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Machine polish paint correction included</li>
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-accent flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Cars, vans, SUVs and caravans</li>
+          </ul>
+          <div class="mt-auto flex flex-wrap items-center gap-4">
+            <a href="/ceramic-coating-bristol/" class="bg-accent text-primary px-6 py-3 rounded-full font-semibold hover:bg-accent-hover transition-colors">
+              From £250 - read the contract
+            </a>
+          </div>
+        </div>
+        <!-- Caravan panel -->
+        <div class="relative rounded-3xl overflow-hidden bg-foam-light p-8 md:p-10 flex flex-col border border-foam-mist">
+          <span class="stamp text-xs self-start mb-6">Bristol speciality</span>
+          <p class="font-memo text-xs uppercase tracking-[0.2em] text-secondary mb-2">The Caravan Division</p>
+          <h3 class="text-2xl md:text-3xl font-heading font-extrabold text-primary mb-4">Caravan & Motorhome Cleaning</h3>
+          <p class="text-gray-600 mb-6 max-w-md">
+            Your caravan spends most of the year on gardening leave - then gets asked to perform all summer. We're the only specialist caravan cleaning service in the Bristol area: black streaks, roof algae and winter grime all dealt with.
+          </p>
+          <ul class="space-y-2 mb-8 text-sm text-gray-700">
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Black streak removal with specialist products</li>
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Roof cleaning - no ladders required (by you)</li>
+            <li class="flex items-start gap-2"><svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>Easy access for towed caravans off the A38</li>
+          </ul>
+          <div class="mt-auto flex flex-wrap items-center gap-4">
+            <a href="/caravan-cleaning-bristol/" class="bg-primary text-white px-6 py-3 rounded-full font-semibold hover:bg-secondary transition-colors">
+              From £20 - book the division
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section - the career ladder -->
+  <section id="pricing" class="py-20 bg-white border-t border-gray-100">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="memo-label mb-4">The pay grades</p>
+        <h2 class="text-3xl md:text-4xl text-gray-900 mb-4">
+          Pick your car's job title
+        </h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">
+          Every package is a rung on the Foam Office career ladder - from the quick Probation Wash to the Managing Director Valet. Prices start from just £10.
+        </p>
+      </div>
+
+      <!-- Vehicle Type Tabs -->
+      <div class="flex justify-center gap-4 mb-10 flex-wrap">
+        {vehicleTypes.map((type, index) => (
+          <button
+            data-vehicle-tab={type.id}
+            class={`flex flex-col items-center gap-1 px-5 py-3 rounded-2xl font-medium transition-all border-2 min-w-[100px] ${
+              index === 0 ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-foam-light'
+            }`}
+          >
+            <img
+              src={type.image}
+              alt={type.label}
+              class="w-24 h-14 object-contain"
+              loading="lazy"
+            />
+            <span class="text-sm">{type.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <!-- Pricing Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {pricingPlans.map((plan) => (
+          <div class={`relative rounded-2xl p-6 shadow-lg transition-all hover:shadow-xl flex flex-col h-full ${
+            plan.popular ? 'bg-accent ring-2 ring-accent' : plan.premium ? 'bg-primary text-white' : 'bg-white'
+          }`}>
+            {/* Pay grade number */}
+            <div class={`absolute -top-3 -left-3 w-10 h-10 rounded-full flex items-center justify-center font-bold ${
+              plan.premium ? 'bg-accent text-primary' : 'bg-secondary text-white'
+            }`}>
+              {plan.id}
+            </div>
+
+            {plan.popular && (
+              <div class="absolute -top-3 right-4 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
+                Best Value
+              </div>
+            )}
+
+            {plan.premium && (
+              <div class="absolute -top-3 right-4 bg-accent text-primary text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                <span>Top Floor</span>
+              </div>
+            )}
+
+            <h3 class={`text-xl font-semibold mt-2 ${
+              plan.premium ? 'text-white' : plan.popular ? 'text-primary' : 'text-gray-900'
+            }`}>
+              {plan.name}
+            </h3>
+            <p class={`text-xs mt-1 mb-4 font-memo uppercase tracking-wider ${
+              plan.premium ? 'text-foam-mist' : plan.popular ? 'text-primary/70' : 'text-gray-500'
+            }`}>{plan.subtitle}</p>
+
+            <div class="mb-4">
+              <span
+                class={`text-4xl font-bold ${plan.premium ? 'text-accent' : 'text-primary'}`}
+                data-price
+                data-car={plan.prices.car}
+                data-suv={plan.prices.suv}
+                data-van={plan.prices.van}
+              >
+                £{plan.prices.car}
+              </span>
+            </div>
+
+            <ul class="space-y-2 mb-4 flex-grow">
+              {plan.features.map((feature) => (
+                <li class="flex items-start gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                    plan.premium ? 'text-accent' : 'text-secondary'
+                  }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class={`text-sm ${plan.premium ? 'text-gray-200' : 'text-gray-600'}`}>{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            {plan.time && (
+              <p class={`text-xs mb-4 ${plan.premium ? 'text-gray-300' : 'text-gray-500'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {plan.time}
+              </p>
+            )}
+
+            <button
+              type="button"
+              onclick="openBookingModal()"
+              class={`block text-center py-3 rounded-full font-medium transition-colors mt-auto w-full ${
+                plan.premium
+                  ? 'bg-accent text-primary hover:bg-accent-hover'
+                  : 'bg-primary text-white hover:bg-secondary'
+              }`}
+            >
+              Apply for this position
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Process Section - the working day -->
+  <section class="py-20 bg-primary text-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="memo-label mb-4 text-foam-mist!">Your car's working day</p>
+        <h2 class="text-3xl md:text-4xl">
+          Quick & easy - no appointment required
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">01. Vehicle check-in</h3>
+          <p class="text-blue-100 text-sm">Drive in during office hours - no appointment needed. The front desk helps your car pick the right job title for the day.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-secondary rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">02. Your car is in a meeting</h3>
+          <p class="text-blue-100 text-sm">Take a seat in the indoor waiting area while the team gets to work. Most meetings run 15-30 minutes; the snow foam does the small talk.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">03. Clock out spotless</h3>
+          <p class="text-blue-100 text-sm">Pay by cash, card or contactless - including Apple Pay and Google Pay - and drive off in a car that just got promoted.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Schedule & Map Section -->
+  <section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="memo-label mb-4">Office hours</p>
+        <h2 class="text-3xl md:text-4xl text-gray-900">
+          The office is open 7 days a week
+        </h2>
+      </div>
+
+      <div class="grid lg:grid-cols-2 gap-8 items-start">
+        <!-- Opening Hours -->
+        <div class="space-y-3 bg-white rounded-2xl p-6 shadow-sm">
+          {schedule.map((item) => (
+            <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
+              <span class="font-medium text-gray-900">{item.day}</span>
+              <span class="text-secondary font-medium font-memo">{item.hours}</span>
+            </div>
+          ))}
+          <p class="text-xs text-gray-500 pt-2">Last full valet check-in: 2pm (drying time before close).</p>
+        </div>
+
+        <!-- Map with Address Above -->
+        <div>
+          <div class="mb-4 flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
+            <div class="w-10 h-10 bg-foam-light rounded-full flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Head office (the only office)</p>
+              <p class="font-semibold text-gray-900">{ADDRESS.short}</p>
+            </div>
+          </div>
+
+          <div class="relative h-[350px] rounded-2xl overflow-hidden shadow-xl">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2484.123456789!2d-2.5927!3d51.5002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x48718e9f9d5d5555%3A0x1234567890abcdef!2s290-294%20Southmead%20Rd%2C%20Bristol%20BS10%205EN!5e0!3m2!1sen!2suk!4v1234567890"
+              width="100%"
+              height="100%"
+              style="border:0;"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Foam Office location - 290-294 Southmead Road, Bristol"
+            ></iframe>
+          </div>
+
+          <div class="mt-6 flex flex-col sm:flex-row gap-3">
+            <button type="button" onclick="openBookingModal()" class="sm:flex-1 bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-secondary transition-colors text-center">
+              Vehicle Check-In
+            </button>
+            <a href={ADDRESS.mapUrl} target="_blank" rel="noopener noreferrer" class="sm:flex-1 border-2 border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Get Directions
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="memo-label mb-4">Performance reviews</p>
+        <h2 class="text-3xl md:text-4xl text-gray-900">
+          Written by actual humans
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {testimonials.map((testimonial) => (
+          <div class="bg-gray-50 rounded-2xl p-8">
+            <div class="text-4xl text-accent mb-4">"</div>
+            <p class="text-gray-700 mb-6">{testimonial.text}</p>
+            <div class="flex text-accent mb-4">
+              {[...Array(testimonial.rating)].map(() => (
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              ))}
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-secondary rounded-full flex items-center justify-center text-white font-semibold">
+                {testimonial.name.charAt(0)}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900">{testimonial.name}</p>
+                <p class="text-gray-500 text-sm">Verified customer</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faqs" class="py-20 bg-white border-t border-gray-100">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-start">
+        <div>
+          <p class="memo-label mb-4">Ask HR</p>
+          <h2 class="text-3xl md:text-4xl text-gray-900 mb-6">
+            Frequently Asked Questions
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Got questions? HR's door is always open (it's a car wash, there isn't really a door). If you can't find what you're looking for, give us a call.
+          </p>
+          <div class="space-y-4">
+            {faqs.map((faq, index) => (
+              <div class="border-2 border-primary/20 rounded-xl overflow-hidden hover:border-primary/40 transition-colors">
+                <button
+                  class="w-full flex items-center justify-between p-4 text-left bg-white hover:bg-foam-light transition-colors faq-toggle"
+                  data-index={index}
+                >
+                  <span class="font-medium text-gray-900">{faq.question}</span>
+                  <div class="w-8 h-8 bg-foam-light rounded-full flex items-center justify-center flex-shrink-0 ml-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary faq-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                <div class="hidden faq-content px-4 pb-4 pt-5 bg-foam-light border-t border-primary/10">
+                  <p class="text-gray-600">{faq.answer}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="relative">
+          <picture>
+            <source srcset="/images/car-wash-contact.webp" type="image/webp" />
+            <img
+              src="/images/car-wash-contact.jpg"
+              alt="Contact Foam Office Bristol"
+              class="rounded-2xl shadow-xl"
+              loading="lazy"
+            />
+          </picture>
+          <div class="absolute bottom-8 left-8 bg-white rounded-xl shadow-lg p-6 max-w-xs">
+            <p class="font-semibold text-gray-900 mb-3">Head Office</p>
+            <div class="space-y-2 text-sm text-gray-600">
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                </svg>
+                {ADDRESS.streetShort}, Bristol
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                {EMAIL}
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                {PHONE_DISPLAY}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA band -->
+  <section class="py-16 bg-gradient-to-r from-dark to-primary text-white">
+    <div class="container mx-auto px-4 text-center">
+      <p class="font-memo text-xs uppercase tracking-[0.25em] text-foam-mist mb-4">{TAGLINE}</p>
+      <h2 class="text-3xl md:text-4xl mb-6">Your car is currently in a meeting with a puddle.</h2>
+      <p class="text-blue-100 mb-8 max-w-xl mx-auto">Schedule a better one. Drive in today or call the front desk on {PHONE_DISPLAY}.</p>
+      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+        <button type="button" onclick="openBookingModal()" class="bg-accent text-primary px-8 py-3 rounded-full font-semibold hover:bg-accent-hover transition-colors">
+          Vehicle Check-In
+        </button>
+        <a href={`tel:${PHONE}`} class="border-2 border-white/70 text-white px-8 py-3 rounded-full font-medium hover:bg-white hover:text-primary transition-colors">
+          Call {PHONE_DISPLAY}
+        </a>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  // FAQ Toggle
+  document.querySelectorAll('.faq-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const content = button.nextElementSibling;
+      const icon = button.querySelector('.faq-icon');
+
+      content?.classList.toggle('hidden');
+      icon?.classList.toggle('rotate-180');
+    });
+  });
+
+  // Pricing Tabs
+  const tabs = document.querySelectorAll('[data-vehicle-tab]');
+  const prices = document.querySelectorAll('[data-price]');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const vehicle = (tab as HTMLElement).dataset.vehicleTab;
+
+      // Update active tab styling
+      tabs.forEach(t => {
+        t.classList.remove('bg-primary', 'text-white', 'border-primary');
+        t.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+      });
+      tab.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+      tab.classList.add('bg-primary', 'text-white', 'border-primary');
+
+      // Update prices
+      prices.forEach(price => {
+        const el = price as HTMLElement;
+        const newPrice = el.dataset[vehicle as string];
+        el.textContent = `£${newPrice}`;
+      });
+    });
+  });
+
+  // Number Counter Animation with Intersection Observer
+  const animateCounter = (element: HTMLElement, target: number, isDecimal: boolean = false) => {
+    const duration = 2000;
+    const start = 0;
+    const startTime = performance.now();
+
+    const updateCounter = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const current = start + (target - start) * easeOutQuart;
+
+      if (isDecimal) {
+        element.textContent = current.toFixed(1);
+      } else {
+        element.textContent = Math.floor(current).toLocaleString() + '+';
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(updateCounter);
+      }
+    };
+
+    requestAnimationFrame(updateCounter);
+  };
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const element = entry.target as HTMLElement;
+        const target = parseFloat(element.dataset.target || '0');
+        const isDecimal = target % 1 !== 0;
+        animateCounter(element, target, isDecimal);
+        counterObserver.unobserve(element);
+      }
+    });
+  }, { threshold: 0.5, rootMargin: '0px' });
+
+  document.querySelectorAll('.count-number').forEach(el => {
+    counterObserver.observe(el);
+  });
+</script>

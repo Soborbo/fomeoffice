@@ -1,0 +1,1237 @@
+---
+// PIN-protected booking display board (for in-store tablet)
+---
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bookings</title>
+  <meta name="robots" content="noindex, nofollow">
+  <style is:inline>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+
+    /* PIN screen */
+    #pin-screen { display: flex; align-items: center; justify-content: center; min-height: 100vh; padding: 1.5rem; }
+    .pin-box { background: #fff; border-radius: 1.25rem; padding: 3rem 2rem; box-shadow: 0 4px 24px rgba(0,0,0,.08); text-align: center; max-width: 380px; width: 100%; }
+    .pin-box h1 { font-size: 1.75rem; color: #19576d; margin-bottom: .5rem; }
+    .pin-box p { color: #6b7280; font-size: 1rem; margin-bottom: 2rem; }
+    .pin-input { display: flex; gap: .75rem; justify-content: center; margin-bottom: 2rem; }
+    .pin-input input { width: 3.5rem; height: 4rem; text-align: center; font-size: 1.75rem; font-weight: 700; border: 2px solid #d1d5db; border-radius: .75rem; outline: none; transition: border-color .2s; }
+    .pin-input input:focus { border-color: #19576d; box-shadow: 0 0 0 3px rgba(25,87,109,.15); }
+    .pin-input input.error { border-color: #ef4444; animation: shake .4s; }
+    .pin-btn { width: 100%; padding: 1rem; background: #19576d; color: #fff; border: none; border-radius: .75rem; font-size: 1.1rem; font-weight: 600; cursor: pointer; transition: background .2s; }
+    .pin-btn:hover { background: #134559; }
+    .pin-btn:disabled { opacity: .4; cursor: not-allowed; }
+    .pin-error { color: #ef4444; font-size: .9rem; margin-top: 1rem; display: none; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-8px)} 75%{transform:translateX(8px)} }
+
+    /* Board */
+    #board { display: none; min-height: 100vh; }
+    .board-header { background: #19576d; color: #fff; padding: 1rem 1.25rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 10; }
+    .board-header h1 { font-size: 1.25rem; font-weight: 700; }
+    .board-header button { background: rgba(255,255,255,.15); border: none; color: #fff; padding: .5rem 1rem; border-radius: .5rem; font-size: .85rem; font-weight: 600; cursor: pointer; }
+
+    /* Filters */
+    .filters { display: flex; gap: .5rem; padding: 1rem; overflow-x: auto; }
+    .filter-btn { border: 2px solid #d1d5db; background: #fff; color: #4b5563; padding: .6rem 1.25rem; border-radius: 2rem; font-size: .9rem; font-weight: 600; cursor: pointer; white-space: nowrap; transition: all .15s; }
+    .filter-btn.active { background: #19576d; color: #fff; border-color: #19576d; }
+
+    /* Stats */
+    .board-content { padding: 0 1rem 1.5rem; }
+    .stats { display: flex; gap: .75rem; margin-bottom: 1rem; }
+    .stat { flex: 1; background: #fff; border-radius: .75rem; padding: .75rem; text-align: center; box-shadow: 0 1px 3px rgba(0,0,0,.05); }
+    .stat .num { font-size: 1.75rem; font-weight: 800; color: #19576d; line-height: 1; }
+    .stat .label { font-size: .7rem; color: #6b7280; margin-top: .25rem; text-transform: uppercase; letter-spacing: .5px; }
+
+    /* Cards */
+    .booking-list { display: flex; flex-direction: column; gap: .75rem; }
+    .booking-card {
+      background: #fff;
+      border-radius: 1rem;
+      padding: 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06);
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: start;
+      border-left: 4px solid transparent;
+    }
+    .booking-card.today-highlight { border-left-color: #f59e0b; }
+
+    .card-info .name { font-weight: 700; font-size: 1.15rem; color: #111827; }
+    .card-info .meta { display: flex; flex-wrap: wrap; gap: .5rem; margin-top: .4rem; align-items: center; }
+    .card-info .meta-item { display: inline-flex; align-items: center; gap: .25rem; font-size: .85rem; color: #6b7280; }
+    .card-info .service-tag { display: inline-block; background: #dbeafe; color: #1e40af; font-size: .8rem; font-weight: 600; padding: .2rem .6rem; border-radius: .5rem; }
+    .card-info .price-tag { font-weight: 700; color: #059669; font-size: .95rem; }
+
+    .card-right { display: flex; flex-direction: column; align-items: flex-end; gap: .5rem; }
+    .card-right .date { font-weight: 700; color: #19576d; font-size: .95rem; text-align: right; }
+    .card-right .time { font-size: .85rem; color: #6b7280; }
+    .card-right .submitted { font-size: .7rem; color: #9ca3af; }
+
+    /* Status buttons — big touch targets */
+    .status-btns { display: flex; gap: .5rem; margin-top: .75rem; }
+    .status-btns button {
+      border: none;
+      padding: .6rem 1.25rem;
+      border-radius: .5rem;
+      font-size: .9rem;
+      font-weight: 600;
+      cursor: pointer;
+      min-height: 44px;
+      min-width: 80px;
+      transition: all .15s;
+    }
+    .btn-done { background: #d1fae5; color: #065f46; }
+    .btn-done:active { background: #6ee7b7; }
+    .btn-noshow { background: #fee2e2; color: #991b1b; }
+    .btn-noshow:active { background: #fca5a5; }
+    .btn-undo { background: #e5e7eb; color: #374151; }
+    .btn-undo:active { background: #d1d5db; }
+
+    /* Done / No Show states */
+    .booking-card.status-done { opacity: .45; }
+    .booking-card.status-noshow { opacity: .45; }
+    .status-label { font-size: .8rem; font-weight: 700; margin-left: .5rem; }
+    .status-label.done { color: #059669; }
+    .status-label.noshow { color: #ef4444; }
+
+    .empty-state { text-align: center; padding: 4rem 1rem; color: #9ca3af; font-size: 1.1rem; }
+    .loading { text-align: center; padding: 4rem 1rem; color: #9ca3af; font-size: 1rem; }
+    .loading::after { content: ''; display: inline-block; width: 1.25rem; height: 1.25rem; border: 3px solid #d1d5db; border-top-color: #19576d; border-radius: 50%; animation: spin .6s linear infinite; margin-left: .5rem; vertical-align: middle; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @media (max-width: 600px) {
+      .booking-card { grid-template-columns: 1fr; }
+      .card-right { flex-direction: row; align-items: center; gap: .75rem; }
+    }
+
+    /* Walk-in CTA bar */
+    .walkin-bar { padding: 1rem 1rem 0; }
+    .walkin-cta {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: .75rem;
+      background: #19576d;
+      color: #fff;
+      border: none;
+      border-radius: .9rem;
+      padding: 1.1rem 1rem;
+      font-size: 1.05rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px rgba(25,87,109,.18);
+      transition: background .15s, transform .05s;
+    }
+    .walkin-cta:active { transform: scale(.98); }
+    .walkin-cta-plus { font-size: 1.5rem; line-height: 1; }
+    .walkin-cta-count {
+      font-size: .8rem;
+      font-weight: 600;
+      color: #f5e642;
+      background: rgba(255,255,255,.12);
+      padding: .3rem .65rem;
+      border-radius: 1rem;
+    }
+
+    /* Walk-in modal */
+    .walkin-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 1rem; }
+    .walkin-modal[hidden] { display: none; }
+    .walkin-backdrop { position: absolute; inset: 0; background: rgba(15,23,42,.55); backdrop-filter: blur(2px); }
+    .walkin-card {
+      position: relative;
+      background: #fff;
+      border-radius: 1.25rem;
+      width: 100%;
+      max-width: 480px;
+      max-height: 90vh;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,.25);
+    }
+    .walkin-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid #f1f5f9;
+    }
+    .walkin-header h2 { font-size: 1.15rem; color: #19576d; }
+    .walkin-close {
+      background: none; border: none; font-size: 1.6rem; line-height: 1;
+      color: #94a3b8; cursor: pointer; padding: .25rem .5rem;
+    }
+    .walkin-progress { height: 4px; background: #f1f5f9; }
+    .walkin-progress-bar {
+      height: 100%; background: #19576d; transition: width .25s ease;
+    }
+    .walkin-body { padding: 1.5rem 1.25rem; overflow-y: auto; }
+    .walkin-prompt {
+      font-size: 1.1rem; font-weight: 700; color: #1e293b;
+      margin-bottom: 1rem;
+    }
+    .walkin-optional { font-weight: 500; color: #94a3b8; font-size: .9rem; }
+    .walkin-grid { display: grid; gap: .65rem; }
+    .walkin-grid-2 { grid-template-columns: repeat(2, 1fr); }
+    .walkin-grid-3 { grid-template-columns: repeat(2, 1fr); }
+    @media (min-width: 480px) { .walkin-grid-3 { grid-template-columns: repeat(3, 1fr); } }
+    .walkin-grid-4 { grid-template-columns: repeat(3, 1fr); }
+    @media (min-width: 480px) { .walkin-grid-4 { grid-template-columns: repeat(4, 1fr); } }
+    .walkin-opt {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: .85rem;
+      padding: 1rem .75rem;
+      font-size: .95rem;
+      font-weight: 600;
+      color: #1e293b;
+      cursor: pointer;
+      min-height: 64px;
+      transition: border-color .12s, background .12s, transform .05s;
+    }
+    .walkin-opt:active { transform: scale(.97); }
+    .walkin-opt:hover { border-color: #19576d; background: #eef6f9; }
+    .walkin-opt-tall { min-height: 96px; font-size: 1.1rem; }
+    .walkin-opt-label { display: block; line-height: 1.2; }
+    .walkin-input {
+      width: 100%;
+      padding: .85rem 1rem;
+      font-size: 1rem;
+      border: 2px solid #e2e8f0;
+      border-radius: .75rem;
+      outline: none;
+      margin-bottom: .85rem;
+    }
+    .walkin-input:focus { border-color: #19576d; }
+    .walkin-checkbox {
+      display: flex; gap: .55rem; align-items: flex-start;
+      font-size: .9rem; color: #475569; line-height: 1.35;
+      margin-bottom: 1.1rem; cursor: pointer;
+    }
+    .walkin-checkbox input { margin-top: .2rem; width: 1.1rem; height: 1.1rem; }
+    .walkin-row { display: flex; gap: .65rem; }
+    .walkin-row .walkin-primary, .walkin-row .walkin-secondary { flex: 1; }
+    .walkin-primary {
+      background: #19576d; color: #fff; border: none;
+      padding: .9rem 1rem; border-radius: .7rem; font-size: 1rem;
+      font-weight: 700; cursor: pointer;
+    }
+    .walkin-primary:hover { background: #134559; }
+    .walkin-secondary {
+      background: #f1f5f9; color: #475569; border: none;
+      padding: .9rem 1rem; border-radius: .7rem; font-size: 1rem;
+      font-weight: 600; cursor: pointer;
+    }
+    .walkin-secondary:hover { background: #e2e8f0; }
+    .walkin-back-row { padding: .5rem 1.25rem 1rem; }
+    .walkin-back {
+      background: none; border: none; color: #64748b;
+      font-size: .9rem; font-weight: 600; cursor: pointer; padding: .35rem 0;
+    }
+    .walkin-back:hover { color: #19576d; }
+    .walkin-center { text-align: center; }
+    .walkin-muted { color: #64748b; font-size: .9rem; margin-top: .5rem; margin-bottom: 1rem; }
+    .walkin-success { color: #059669; font-size: 1.6rem; }
+    .walkin-error { color: #dc2626; }
+    .walkin-spinner {
+      width: 2.25rem; height: 2.25rem;
+      border: 3px solid #e2e8f0;
+      border-top-color: #19576d;
+      border-radius: 50%;
+      animation: spin .7s linear infinite;
+      margin: 1rem auto 0;
+    }
+
+    /* Top menu / tabs */
+    .board-nav { display: flex; gap: .5rem; padding: .75rem 1rem 0; }
+    .board-tab {
+      flex: 1; background: #fff; border: 2px solid #e2e8f0; color: #475569;
+      padding: .7rem 1rem; border-radius: .75rem; font-size: .95rem; font-weight: 700;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: .45rem;
+      min-height: 48px; transition: background .15s, border-color .15s, color .15s;
+    }
+    .board-tab.active { background: #19576d; border-color: #19576d; color: #fff; }
+    .board-tab svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+    /* Car-size image tiles — same imagery as the public booking form */
+    .walkin-size-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: .65rem; }
+    @media (min-width: 480px) { .walkin-size-grid { grid-template-columns: repeat(3, 1fr); } }
+    .walkin-size-opt {
+      background: #f8fafc; border: 2px solid #e2e8f0; border-radius: .85rem;
+      padding: .5rem; cursor: pointer; overflow: hidden;
+      display: flex; flex-direction: column; align-items: center; gap: .45rem;
+      transition: border-color .12s, background .12s, transform .05s;
+    }
+    .walkin-size-opt:active { transform: scale(.97); }
+    .walkin-size-opt:hover { border-color: #19576d; background: #eef6f9; }
+    .walkin-size-opt img { width: 100%; height: 68px; object-fit: contain; pointer-events: none; }
+    .walkin-size-opt .walkin-opt-label { font-size: .9rem; font-weight: 600; color: #1e293b; }
+
+    /* Payment buttons with icons */
+    .walkin-pay-icon { display: block; width: 34px; height: 34px; margin: 0 auto .4rem; }
+    .walkin-opt-tall { display: flex; flex-direction: column; align-items: center; justify-content: center; }
+
+    /* "Other" custom price input */
+    .walkin-custom { margin-top: 1.1rem; }
+    .walkin-custom[hidden] { display: none; }
+    .walkin-custom-row { display: flex; gap: .55rem; align-items: stretch; }
+    .walkin-price-input-wrap { position: relative; flex: 1; }
+    .walkin-price-input-wrap .pfx {
+      position: absolute; left: .9rem; top: 50%; transform: translateY(-50%);
+      color: #64748b; font-weight: 700; font-size: 1.1rem; pointer-events: none;
+    }
+    #walkin-custom-price {
+      width: 100%; padding: .85rem 1rem .85rem 1.9rem; font-size: 1.15rem;
+      border: 2px solid #e2e8f0; border-radius: .75rem; outline: none;
+    }
+    #walkin-custom-price:focus { border-color: #19576d; }
+    .walkin-custom-go {
+      background: #19576d; color: #fff; border: none; border-radius: .75rem;
+      padding: 0 1.25rem; font-size: 1rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+    }
+    .walkin-custom-go:hover { background: #134559; }
+    .walkin-custom-error { color: #dc2626; font-size: .85rem; margin-top: .5rem; }
+
+    /* Walk-in log view */
+    .log-filters { display: flex; flex-wrap: wrap; gap: .5rem; padding: 1rem; }
+    .log-filters select {
+      flex: 1; min-width: 130px; padding: .6rem .75rem; border: 2px solid #e2e8f0;
+      border-radius: .6rem; font-size: .9rem; background: #fff; color: #1f2937; font-weight: 600;
+    }
+    .log-content { padding: 0 1rem 1.5rem; }
+    .log-summary {
+      display: flex; gap: .75rem; margin-bottom: 1rem; flex-wrap: wrap;
+    }
+    .log-list { display: flex; flex-direction: column; gap: .6rem; }
+    .log-card {
+      background: #fff; border-radius: .9rem; padding: 1rem 1.1rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06); display: grid;
+      grid-template-columns: 1fr auto; gap: .5rem; align-items: start;
+    }
+    .log-main { display: flex; flex-direction: column; gap: .35rem; min-width: 0; }
+    .log-line { display: flex; flex-wrap: wrap; gap: .4rem; align-items: center; }
+    .log-pill { font-size: .8rem; font-weight: 600; padding: .15rem .55rem; border-radius: .5rem; background: #f1f5f9; color: #334155; }
+    .log-pill.pay-cash { background: #dcfce7; color: #166534; }
+    .log-pill.pay-card { background: #dbeafe; color: #1e40af; }
+    .log-price { font-weight: 800; color: #059669; font-size: 1rem; }
+    .log-email { font-size: .82rem; color: #6b7280; word-break: break-all; }
+    .log-meta { text-align: right; display: flex; flex-direction: column; gap: .2rem; align-items: flex-end; }
+    .log-who { font-weight: 700; color: #19576d; font-size: .85rem; }
+    .log-when { font-size: .72rem; color: #94a3b8; }
+  </style>
+</head>
+<body>
+  <div id="pin-screen">
+    <div class="pin-box">
+      <h1>Bookings</h1>
+      <p>Enter PIN to view bookings</p>
+      <div class="pin-input" id="pin-inputs">
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off" />
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off" />
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off" />
+        <input type="tel" maxlength="1" inputmode="numeric" autocomplete="off" />
+      </div>
+      <button class="pin-btn" id="pin-submit" disabled>Unlock</button>
+      <p class="pin-error" id="pin-error">Wrong PIN. Try again.</p>
+    </div>
+  </div>
+
+  <div id="board">
+    <div class="board-header">
+      <h1 id="board-title">Bookings</h1>
+      <button id="logout-btn">Lock</button>
+    </div>
+
+    <!-- Menu: Bookings (default) vs Walk-in Log -->
+    <div class="board-nav" id="board-nav">
+      <button type="button" class="board-tab active" data-view="bookings">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        <span>Bookings</span>
+      </button>
+      <button type="button" class="board-tab" data-view="log">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6M9 13h6M9 17h6"/></svg>
+        <span>Walk-in Log</span>
+      </button>
+    </div>
+
+    <!-- View 1: bookings for each day (default) -->
+    <div id="view-bookings">
+      <div class="walkin-bar">
+        <button type="button" id="walkin-open" class="walkin-cta">
+          <span class="walkin-cta-plus">+</span>
+          <span class="walkin-cta-label">Add walk-in</span>
+          <span id="walkin-count" class="walkin-cta-count" hidden>0 today</span>
+        </button>
+      </div>
+      <div class="filters" id="filters">
+        <button class="filter-btn active" data-filter="today">Today</button>
+        <button class="filter-btn" data-filter="tomorrow">Tomorrow</button>
+        <button class="filter-btn" data-filter="week">This Week</button>
+        <button class="filter-btn" data-filter="all">All</button>
+      </div>
+      <div class="board-content">
+        <div class="stats" id="stats"></div>
+        <div id="booking-list" class="booking-list">
+          <div class="loading">Loading bookings</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- View 2: log of walk-ins the workers entered (filterable) -->
+    <div id="view-log" hidden>
+      <div class="log-filters">
+        <select id="log-period">
+          <option value="today">Today</option>
+          <option value="week">Last 7 days</option>
+          <option value="month">Last 30 days</option>
+          <option value="all">All time</option>
+        </select>
+        <select id="log-worker">
+          <option value="">All staff</option>
+        </select>
+        <select id="log-payment">
+          <option value="">Cash &amp; card</option>
+          <option value="cash">Cash only</option>
+          <option value="card">Card only</option>
+        </select>
+      </div>
+      <div class="log-content">
+        <div class="stats log-summary" id="log-summary"></div>
+        <div id="log-list" class="log-list">
+          <div class="loading">Loading log</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Done-payment modal: asks Cash or Card before marking a booking Done.
+       Without this, the booking lands in D1 with payment_method=NULL and the
+       login-side CRM revenue reports filter it out. -->
+  <div id="done-modal" class="walkin-modal" role="dialog" aria-modal="true" aria-label="Mark booking done" hidden>
+    <div class="walkin-backdrop" id="done-backdrop"></div>
+    <div class="walkin-card">
+      <div class="walkin-header">
+        <h2>Mark Done</h2>
+        <button type="button" id="done-close" class="walkin-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="walkin-body">
+        <p class="walkin-prompt">Cash or card?</p>
+        <div class="walkin-grid walkin-grid-2">
+          <button type="button" class="walkin-opt walkin-opt-tall" data-done-payment="cash">
+            <svg class="walkin-pay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+            <span class="walkin-opt-label">Cash</span>
+          </button>
+          <button type="button" class="walkin-opt walkin-opt-tall" data-done-payment="card">
+            <svg class="walkin-pay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+            <span class="walkin-opt-label">Card</span>
+          </button>
+        </div>
+        <p id="done-error" class="walkin-center walkin-error" hidden></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Walk-in modal -->
+  <div id="walkin-modal" class="walkin-modal" role="dialog" aria-modal="true" aria-label="Add walk-in" hidden>
+    <div class="walkin-backdrop" id="walkin-backdrop"></div>
+    <div class="walkin-card">
+      <div class="walkin-header">
+        <h2 id="walkin-title">New walk-in</h2>
+        <button type="button" id="walkin-close" class="walkin-close" aria-label="Close">&times;</button>
+      </div>
+      <div class="walkin-progress">
+        <div id="walkin-progress-bar" class="walkin-progress-bar" style="width: 20%"></div>
+      </div>
+      <div class="walkin-body">
+        <!-- Step 1: car size — same images as the public booking form -->
+        <div class="walkin-step" data-step="size">
+          <p class="walkin-prompt">Car size?</p>
+          <div class="walkin-size-grid">
+            <button type="button" class="walkin-size-opt" data-size="small">
+              <img src="/images/small-car.jpg" alt="Small car" loading="lazy" />
+              <span class="walkin-opt-label">Small Car</span>
+            </button>
+            <button type="button" class="walkin-size-opt" data-size="large">
+              <img src="/images/luton.jpg" alt="Large / Luton" loading="lazy" />
+              <span class="walkin-opt-label">Large / Luton</span>
+            </button>
+            <button type="button" class="walkin-size-opt" data-size="suv">
+              <img src="/images/suv.jpg" alt="SUV / Van" loading="lazy" />
+              <span class="walkin-opt-label">SUV / Van</span>
+            </button>
+            <button type="button" class="walkin-size-opt" data-size="camper">
+              <img src="/images/motorhome.jpg" alt="Camper / Caravan" loading="lazy" />
+              <span class="walkin-opt-label">Camper / Caravan</span>
+            </button>
+            <button type="button" class="walkin-size-opt" data-size="sports">
+              <img src="/images/supercar.jpg" alt="Sports / Supercar" loading="lazy" />
+              <span class="walkin-opt-label">Sports / Supercar</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 2: service type -->
+        <div class="walkin-step" data-step="service" hidden>
+          <p class="walkin-prompt">What was washed?</p>
+          <div class="walkin-grid walkin-grid-3">
+            <button type="button" class="walkin-opt" data-service="outside_only"><span class="walkin-opt-label">Outside only</span></button>
+            <button type="button" class="walkin-opt" data-service="inside_only"><span class="walkin-opt-label">Inside only</span></button>
+            <button type="button" class="walkin-opt" data-service="inside_and_outside"><span class="walkin-opt-label">Inside &amp; outside</span></button>
+          </div>
+        </div>
+
+        <!-- Step 3: price -->
+        <div class="walkin-step" data-step="price" hidden>
+          <p class="walkin-prompt">Price?</p>
+          <div id="walkin-price-grid" class="walkin-grid walkin-grid-4"></div>
+          <!-- Revealed when "Other" is tapped — pops the numeric keyboard -->
+          <div id="walkin-custom" class="walkin-custom" hidden>
+            <div class="walkin-custom-row">
+              <div class="walkin-price-input-wrap">
+                <span class="pfx">£</span>
+                <input type="number" id="walkin-custom-price" inputmode="decimal"
+                  min="1" max="1000" step="0.01" placeholder="Enter price" />
+              </div>
+              <button type="button" id="walkin-custom-go" class="walkin-custom-go">Use price</button>
+            </div>
+            <p id="walkin-custom-error" class="walkin-custom-error" hidden>Enter a price between £1 and £1000.</p>
+          </div>
+        </div>
+
+        <!-- Step 4: payment -->
+        <div class="walkin-step" data-step="payment" hidden>
+          <p class="walkin-prompt">Cash or card?</p>
+          <div class="walkin-grid walkin-grid-2">
+            <button type="button" class="walkin-opt walkin-opt-tall" data-payment="cash">
+              <svg class="walkin-pay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="2.5"/><path d="M6 12h.01M18 12h.01"/></svg>
+              <span class="walkin-opt-label">Cash</span>
+            </button>
+            <button type="button" class="walkin-opt walkin-opt-tall" data-payment="card">
+              <svg class="walkin-pay-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20M6 15h4"/></svg>
+              <span class="walkin-opt-label">Card</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Step 5: email (optional) -->
+        <div class="walkin-step" data-step="email" hidden>
+          <p class="walkin-prompt">Customer email? <span class="walkin-optional">(optional, for receipt &amp; offers)</span></p>
+          <input type="email" id="walkin-email" inputmode="email" autocomplete="email" placeholder="customer@example.com" class="walkin-input" />
+          <label class="walkin-checkbox">
+            <input type="checkbox" id="walkin-marketing" />
+            <span>Customer agrees to receive offers and loyalty rewards</span>
+          </label>
+          <div class="walkin-row">
+            <button type="button" id="walkin-skip" class="walkin-secondary">Skip</button>
+            <button type="button" id="walkin-confirm" class="walkin-primary">Confirm walk-in</button>
+          </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="walkin-step" data-step="loading" hidden>
+          <p class="walkin-prompt walkin-center">Saving</p>
+          <div class="walkin-spinner"></div>
+        </div>
+
+        <!-- Success -->
+        <div class="walkin-step" data-step="success" hidden>
+          <p class="walkin-prompt walkin-center walkin-success">Logged ✓</p>
+          <p id="walkin-success-detail" class="walkin-center walkin-muted"></p>
+          <button type="button" id="walkin-another" class="walkin-primary">Add another</button>
+        </div>
+
+        <!-- Error -->
+        <div class="walkin-step" data-step="error" hidden>
+          <p class="walkin-prompt walkin-center walkin-error">Could not save</p>
+          <p id="walkin-error-detail" class="walkin-center walkin-muted"></p>
+          <div class="walkin-row">
+            <button type="button" id="walkin-retry" class="walkin-secondary">Try again</button>
+            <button type="button" id="walkin-close-error" class="walkin-primary">Close</button>
+          </div>
+        </div>
+      </div>
+      <div id="walkin-back-row" class="walkin-back-row" hidden>
+        <button type="button" id="walkin-back" class="walkin-back">&larr; Back</button>
+      </div>
+    </div>
+  </div>
+
+  <script is:inline>
+    var pinInputs = document.querySelectorAll('#pin-inputs input');
+    var pinSubmit = document.getElementById('pin-submit');
+    var pinError = document.getElementById('pin-error');
+    var pinScreen = document.getElementById('pin-screen');
+    var board = document.getElementById('board');
+    var currentPin = '';
+    var allBookings = [];
+    var activeFilter = 'today';
+    var previousBookingCount = 0;
+
+    pinInputs.forEach(function(input, i) {
+      input.addEventListener('input', function(e) {
+        var val = e.target.value.replace(/\D/g, '');
+        e.target.value = val;
+        if (val && i < pinInputs.length - 1) pinInputs[i + 1].focus();
+        currentPin = Array.from(pinInputs).map(function(x) { return x.value; }).join('');
+        pinSubmit.disabled = currentPin.length < 4;
+      });
+      input.addEventListener('keydown', function(e) {
+        if (e.key === 'Backspace' && !e.target.value && i > 0) pinInputs[i - 1].focus();
+        if (e.key === 'Enter') submitPin();
+      });
+      input.addEventListener('paste', function(e) {
+        e.preventDefault();
+        var text = (e.clipboardData || window.clipboardData).getData('text').replace(/\D/g, '');
+        for (var j = 0; j < pinInputs.length && j < text.length; j++) pinInputs[j].value = text[j];
+        currentPin = Array.from(pinInputs).map(function(x) { return x.value; }).join('');
+        pinSubmit.disabled = currentPin.length < 4;
+        if (text.length >= pinInputs.length) pinInputs[pinInputs.length - 1].focus();
+      });
+    });
+
+    pinSubmit.addEventListener('click', submitPin);
+
+    function submitPin() {
+      if (currentPin.length < 4) return;
+      pinSubmit.disabled = true;
+      pinError.style.display = 'none';
+      fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: currentPin }),
+      }).then(function(res) {
+        if (!res.ok) {
+          pinError.style.display = 'block';
+          pinInputs.forEach(function(x) { x.value = ''; x.classList.add('error'); });
+          setTimeout(function() { pinInputs.forEach(function(x) { x.classList.remove('error'); }); }, 500);
+          pinInputs[0].focus();
+          pinSubmit.disabled = true;
+          return;
+        }
+        res.json().then(function(data) {
+          sessionStorage.setItem('boardPin', currentPin);
+          previousBookingCount = data.bookings.length;
+          showBoard(data.bookings, data.walkin_summary);
+        });
+      }).catch(function() {
+        pinError.textContent = 'Something went wrong. Try again.';
+        pinError.style.display = 'block';
+        pinSubmit.disabled = currentPin.length < 4;
+      });
+    }
+
+    function showBoard(bookings, walkinSummary) {
+      pinScreen.style.display = 'none';
+      board.style.display = 'block';
+      allBookings = bookings;
+      renderFiltered();
+      if (walkinSummary && typeof window.updateWalkinCount === 'function') {
+        window.updateWalkinCount(walkinSummary.count);
+      }
+      switchView('bookings');
+      startAutoRefresh();
+    }
+
+    // Date helpers — emit zero-padded YYYY-MM-DD so the keys sort and compare
+    // consistently with the rest of the codebase.
+    function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+    function getDateKey(d) {
+      return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate());
+    }
+    function toDateKey(dateStr) {
+      try { var d = new Date(dateStr); if (!isNaN(d.getTime())) return getDateKey(d); } catch(e) {}
+      return dateStr;
+    }
+
+    function filterBookings(bookings, filter) {
+      var now = new Date();
+      var todayKey = getDateKey(now);
+      var tom = new Date(now); tom.setDate(tom.getDate() + 1);
+      var tomorrowKey = getDateKey(tom);
+      var endOfWeek = new Date(now);
+      var dow = now.getDay();
+      endOfWeek.setDate(now.getDate() + (dow === 0 ? 0 : 7 - dow));
+      endOfWeek.setHours(23, 59, 59, 999);
+      if (filter === 'all') return bookings;
+      return bookings.filter(function(b) {
+        var bk = toDateKey(b.date);
+        if (filter === 'today') return bk === todayKey;
+        if (filter === 'tomorrow') return bk === tomorrowKey;
+        if (filter === 'week') { try { var bd = new Date(b.date); return bd >= now && bd <= endOfWeek; } catch(e) { return false; } }
+        return true;
+      });
+    }
+
+    function renderFiltered() { renderBookings(filterBookings(allBookings, activeFilter)); }
+
+    document.querySelectorAll('.filter-btn').forEach(function(btn) {
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.filter-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        activeFilter = btn.dataset.filter;
+        renderFiltered();
+      });
+    });
+
+    function renderBookings(bookings) {
+      var list = document.getElementById('booking-list');
+      var stats = document.getElementById('stats');
+
+      if (!bookings.length) {
+        list.innerHTML = '<div class="empty-state">No bookings for this period</div>';
+        stats.innerHTML = '';
+        return;
+      }
+
+      var todayKey = getDateKey(new Date());
+      var todayCount = bookings.filter(function(b) { return toDateKey(b.date) === todayKey; }).length;
+      var pendingCount = bookings.filter(function(b) { return !b.status; }).length;
+
+      stats.innerHTML =
+        '<div class="stat"><div class="num">' + bookings.length + '</div><div class="label">Shown</div></div>' +
+        '<div class="stat"><div class="num">' + pendingCount + '</div><div class="label">Pending</div></div>' +
+        '<div class="stat"><div class="num">' + todayCount + '</div><div class="label">Today</div></div>';
+
+      list.innerHTML = bookings.map(function(b) {
+        var isToday = toDateKey(b.date) === todayKey;
+        var sc = b.status ? 'status-' + b.status.toLowerCase().replace(/\s/g, '') : '';
+        var sl = '';
+        if (b.status === 'Done') sl = '<span class="status-label done">Done</span>';
+        else if (b.status === 'No Show') sl = '<span class="status-label noshow">No Show</span>';
+
+        var btns = b.status
+          ? '<button class="btn-undo" onclick="setStatus(' + b.row + ',\'\')">Undo</button>'
+          : '<button class="btn-done" onclick="setStatus(' + b.row + ',\'Done\')">Done</button><button class="btn-noshow" onclick="setStatus(' + b.row + ',\'No Show\')">No Show</button>';
+
+        return '<div class="booking-card ' + (isToday ? 'today-highlight' : '') + ' ' + sc + '">' +
+          '<div class="card-info">' +
+            '<div class="name">' + esc(b.firstName) + ' ' + esc(b.lastName) + sl + '</div>' +
+            '<div class="meta">' +
+              '<span class="service-tag">' + esc(b.service) + '</span>' +
+              '<span class="price-tag">' + esc(b.price) + '</span>' +
+              '<span class="meta-item">' + esc(b.vehicle) + '</span>' +
+            '</div>' +
+            '<div class="status-btns">' + btns + '</div>' +
+          '</div>' +
+          '<div class="card-right">' +
+            '<div class="date">' + esc(b.date) + '</div>' +
+            '<div class="time">' + esc(b.time) + '</div>' +
+            '<div class="submitted">' + esc(b.submitted) + '</div>' +
+          '</div>' +
+        '</div>';
+      }).join('');
+    }
+
+    function esc(s) { var d = document.createElement('div'); d.textContent = s || ''; return d.innerHTML; }
+
+    // Notification sound
+    function playNotificationSound() {
+      try {
+        var ctx = new (window.AudioContext || window.webkitAudioContext)();
+        [520, 660].forEach(function(freq, i) {
+          var osc = ctx.createOscillator(); var gain = ctx.createGain();
+          osc.type = 'sine'; osc.frequency.value = freq;
+          gain.gain.setValueAtTime(0.3, ctx.currentTime + i * 0.15);
+          gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + i * 0.15 + 0.4);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(ctx.currentTime + i * 0.15); osc.stop(ctx.currentTime + i * 0.15 + 0.4);
+        });
+      } catch(e) {}
+    }
+
+    // Status
+    function sendStatus(row, status, paymentMethod) {
+      var pin = sessionStorage.getItem('boardPin');
+      if (!pin) return Promise.reject(new Error('No PIN'));
+      var body = { pin: pin, action: 'setStatus', row: row, status: status };
+      if (paymentMethod) body.payment_method = paymentMethod;
+      return fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+    }
+
+    // Done modal state — captures Cash/Card before we POST the status change.
+    var doneModal = document.getElementById('done-modal');
+    var doneBackdrop = document.getElementById('done-backdrop');
+    var doneClose = document.getElementById('done-close');
+    var doneError = document.getElementById('done-error');
+    var pendingDoneRow = null;
+
+    function openDoneModal(row) {
+      pendingDoneRow = row;
+      doneError.hidden = true;
+      doneError.textContent = '';
+      doneModal.hidden = false;
+    }
+    function closeDoneModal() {
+      pendingDoneRow = null;
+      doneModal.hidden = true;
+    }
+    doneClose.addEventListener('click', closeDoneModal);
+    doneBackdrop.addEventListener('click', closeDoneModal);
+
+    document.querySelectorAll('[data-done-payment]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        if (pendingDoneRow == null) { closeDoneModal(); return; }
+        var paymentMethod = btn.getAttribute('data-done-payment');
+        var row = pendingDoneRow;
+        // Lock the buttons while the request flies so a double-tap doesn't
+        // fire two updates.
+        document.querySelectorAll('[data-done-payment]').forEach(function (b) { b.disabled = true; });
+        sendStatus(row, 'Done', paymentMethod)
+          .then(function (res) {
+            document.querySelectorAll('[data-done-payment]').forEach(function (b) { b.disabled = false; });
+            if (!res.ok) {
+              return res.json().then(function (data) {
+                doneError.textContent = (data && data.error) || 'Could not save. Try again.';
+                doneError.hidden = false;
+              }).catch(function () {
+                doneError.textContent = 'Could not save. Try again.';
+                doneError.hidden = false;
+              });
+            }
+            closeDoneModal();
+            refreshBookings();
+          })
+          .catch(function () {
+            document.querySelectorAll('[data-done-payment]').forEach(function (b) { b.disabled = false; });
+            doneError.textContent = 'Network error. Try again.';
+            doneError.hidden = false;
+          });
+      });
+    });
+
+    function setStatus(row, status) {
+      // "Done" requires a payment method — open the modal first.
+      if (status === 'Done') { openDoneModal(row); return; }
+      // No Show + Undo go straight through.
+      sendStatus(row, status, null).then(function (res) {
+        if (res.ok) refreshBookings();
+      });
+    }
+    window.setStatus = setStatus;
+
+    // Auto refresh
+    var autoRefreshTimer = null;
+    function refreshBookings() {
+      var pin = sessionStorage.getItem('boardPin');
+      if (!pin) return;
+      document.getElementById('booking-list').innerHTML = '<div class="loading">Loading</div>';
+      fetch('/api/bookings', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: pin }),
+      }).then(function(res) {
+        if (!res.ok) return;
+        res.json().then(function(data) {
+          if (data.bookings.length > previousBookingCount && previousBookingCount > 0) playNotificationSound();
+          previousBookingCount = data.bookings.length;
+          allBookings = data.bookings;
+          renderFiltered();
+          if (data.walkin_summary && typeof window.updateWalkinCount === 'function') {
+            window.updateWalkinCount(data.walkin_summary.count);
+          }
+        });
+      });
+    }
+    function startAutoRefresh() { stopAutoRefresh(); autoRefreshTimer = setInterval(refreshBookings, 5 * 60 * 1000); }
+    function stopAutoRefresh() { if (autoRefreshTimer) { clearInterval(autoRefreshTimer); autoRefreshTimer = null; } }
+
+    // ============================ Walk-in modal ============================
+    // Fixed price ladder (£) shared by every car size, plus a 60 tier and an
+    // "Other" tile that pops the numeric keyboard for a custom amount.
+    var WALKIN_PRICES = [10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60];
+
+    var walkinModal = document.getElementById('walkin-modal');
+    var walkinOpenBtn = document.getElementById('walkin-open');
+    var walkinCloseBtn = document.getElementById('walkin-close');
+    var walkinBackdrop = document.getElementById('walkin-backdrop');
+    var walkinBackBtn = document.getElementById('walkin-back');
+    var walkinBackRow = document.getElementById('walkin-back-row');
+    var walkinProgress = document.getElementById('walkin-progress-bar');
+    var walkinPriceGrid = document.getElementById('walkin-price-grid');
+    var walkinCustom = document.getElementById('walkin-custom');
+    var walkinCustomPrice = document.getElementById('walkin-custom-price');
+    var walkinCustomGo = document.getElementById('walkin-custom-go');
+    var walkinCustomError = document.getElementById('walkin-custom-error');
+    var walkinEmail = document.getElementById('walkin-email');
+    var walkinMarketing = document.getElementById('walkin-marketing');
+    var walkinSkip = document.getElementById('walkin-skip');
+    var walkinConfirm = document.getElementById('walkin-confirm');
+    var walkinAnother = document.getElementById('walkin-another');
+    var walkinRetry = document.getElementById('walkin-retry');
+    var walkinCloseError = document.getElementById('walkin-close-error');
+    var walkinSuccessDetail = document.getElementById('walkin-success-detail');
+    var walkinErrorDetail = document.getElementById('walkin-error-detail');
+    var walkinCount = document.getElementById('walkin-count');
+
+    var WALKIN_STEPS = ['size', 'service', 'price', 'payment', 'email'];
+    var walkinState = { step: 0, size: '', service: '', price: 0, payment: '' };
+
+    function showWalkinStep(name) {
+      if (name === 'price') resetCustomPrice();
+      var steps = document.querySelectorAll('.walkin-step');
+      for (var i = 0; i < steps.length; i++) {
+        steps[i].hidden = steps[i].getAttribute('data-step') !== name;
+      }
+      var stepIdx = WALKIN_STEPS.indexOf(name);
+      if (stepIdx >= 0) {
+        walkinProgress.style.width = ((stepIdx + 1) / WALKIN_STEPS.length * 100) + '%';
+        walkinBackRow.hidden = stepIdx === 0;
+        walkinState.step = stepIdx;
+      } else {
+        walkinBackRow.hidden = true;
+      }
+    }
+
+    function openWalkin() {
+      walkinState = { step: 0, size: '', service: '', price: 0, payment: '' };
+      walkinEmail.value = '';
+      walkinMarketing.checked = false;
+      var opts = document.querySelectorAll('.walkin-opt');
+      for (var i = 0; i < opts.length; i++) opts[i].classList.remove('selected');
+      showWalkinStep('size');
+      walkinModal.hidden = false;
+    }
+    function closeWalkin() { walkinModal.hidden = true; }
+
+    walkinOpenBtn.addEventListener('click', openWalkin);
+    walkinCloseBtn.addEventListener('click', closeWalkin);
+    walkinBackdrop.addEventListener('click', closeWalkin);
+    walkinCloseError.addEventListener('click', closeWalkin);
+
+    walkinBackBtn.addEventListener('click', function () {
+      if (walkinState.step > 0) showWalkinStep(WALKIN_STEPS[walkinState.step - 1]);
+    });
+
+    document.querySelectorAll('[data-size]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        walkinState.size = btn.getAttribute('data-size');
+        showWalkinStep('service');
+      });
+    });
+
+    document.querySelectorAll('[data-service]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        walkinState.service = btn.getAttribute('data-service');
+        renderWalkinPriceGrid();
+        showWalkinStep('price');
+      });
+    });
+
+    function renderWalkinPriceGrid() {
+      walkinPriceGrid.innerHTML = '';
+      WALKIN_PRICES.forEach(function (pounds) {
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'walkin-opt';
+        btn.innerHTML = '<span class="walkin-opt-label">£' + pounds + '</span>';
+        btn.addEventListener('click', function () {
+          walkinState.price = pounds * 100;
+          showWalkinStep('payment');
+        });
+        walkinPriceGrid.appendChild(btn);
+      });
+      // "Other" tile reveals the numeric input below the grid.
+      var other = document.createElement('button');
+      other.type = 'button';
+      other.className = 'walkin-opt';
+      other.innerHTML = '<span class="walkin-opt-label">Other</span>';
+      other.addEventListener('click', showCustomPrice);
+      walkinPriceGrid.appendChild(other);
+    }
+
+    function resetCustomPrice() {
+      walkinCustom.hidden = true;
+      walkinCustomError.hidden = true;
+      walkinCustomPrice.value = '';
+    }
+
+    function showCustomPrice() {
+      walkinCustom.hidden = false;
+      walkinCustomError.hidden = true;
+      walkinCustomPrice.focus();
+    }
+
+    function confirmCustomPrice() {
+      var pounds = parseFloat(walkinCustomPrice.value);
+      if (!isFinite(pounds) || pounds < 1 || pounds > 1000) {
+        walkinCustomError.hidden = false;
+        walkinCustomPrice.focus();
+        return;
+      }
+      walkinState.price = Math.round(pounds * 100);
+      showWalkinStep('payment');
+    }
+
+    walkinCustomGo.addEventListener('click', confirmCustomPrice);
+    walkinCustomPrice.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); confirmCustomPrice(); }
+    });
+
+    document.querySelectorAll('[data-payment]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        walkinState.payment = btn.getAttribute('data-payment');
+        showWalkinStep('email');
+      });
+    });
+
+    walkinSkip.addEventListener('click', function () { submitWalkin(false); });
+    walkinConfirm.addEventListener('click', function () { submitWalkin(true); });
+    walkinRetry.addEventListener('click', function () { showWalkinStep('email'); });
+    walkinAnother.addEventListener('click', openWalkin);
+
+    function submitWalkin(includeEmail) {
+      var pin = sessionStorage.getItem('boardPin');
+      if (!pin) { closeWalkin(); return; }
+
+      var emailRaw = walkinEmail.value.trim();
+      var emailValid = emailRaw && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailRaw);
+      var marketing = !!walkinMarketing.checked;
+
+      if (includeEmail && marketing && !emailValid) {
+        walkinErrorDetail.textContent = 'Marketing opt-in needs a valid email.';
+        showWalkinStep('error');
+        return;
+      }
+
+      var body = {
+        pin: pin,
+        car_size: walkinState.size,
+        service_type: walkinState.service,
+        price_pence: walkinState.price,
+        payment_method: walkinState.payment,
+        marketing_opt_in: marketing,
+      };
+      if (includeEmail && emailValid) body.customer_email = emailRaw;
+
+      showWalkinStep('loading');
+
+      fetch('/api/walkins', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }).then(function (res) {
+        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
+      }).then(function (result) {
+        if (!result.ok) {
+          walkinErrorDetail.textContent = (result.data && result.data.error) || 'Server rejected the walk-in.';
+          showWalkinStep('error');
+          return;
+        }
+        walkinSuccessDetail.textContent = 'Logged by ' + (result.data.recordedBy || 'worker') + '.';
+        showWalkinStep('success');
+        refreshBookings();
+      }).catch(function () {
+        walkinErrorDetail.textContent = 'Network error. Try again.';
+        showWalkinStep('error');
+      });
+    }
+
+    function updateWalkinCount(n) {
+      if (typeof n !== 'number' || n <= 0) {
+        walkinCount.hidden = true;
+        return;
+      }
+      walkinCount.textContent = n + ' today';
+      walkinCount.hidden = false;
+    }
+    // Expose so the bookings refresh handler can update the count
+    window.updateWalkinCount = updateWalkinCount;
+    // ============================ /Walk-in modal ============================
+
+    // ============================ Menu / views =============================
+    var boardTitle = document.getElementById('board-title');
+    var viewBookings = document.getElementById('view-bookings');
+    var viewLog = document.getElementById('view-log');
+    var logPeriod = document.getElementById('log-period');
+    var logWorker = document.getElementById('log-worker');
+    var logPayment = document.getElementById('log-payment');
+    var logList = document.getElementById('log-list');
+    var logSummary = document.getElementById('log-summary');
+    var activeView = 'bookings';
+
+    function switchView(view) {
+      activeView = view;
+      document.querySelectorAll('.board-tab').forEach(function (t) {
+        t.classList.toggle('active', t.getAttribute('data-view') === view);
+      });
+      var isLog = view === 'log';
+      viewBookings.hidden = isLog;
+      viewLog.hidden = !isLog;
+      boardTitle.textContent = isLog ? 'Walk-in Log' : 'Bookings';
+      if (isLog) fetchWalkinLog();
+    }
+
+    document.querySelectorAll('.board-tab').forEach(function (t) {
+      t.addEventListener('click', function () { switchView(t.getAttribute('data-view')); });
+    });
+    logPeriod.addEventListener('change', fetchWalkinLog);
+    logWorker.addEventListener('change', fetchWalkinLog);
+    logPayment.addEventListener('change', fetchWalkinLog);
+
+    // ============================ Walk-in log ==============================
+    var SIZE_LABELS = {
+      small: 'Small Car', large: 'Large / Luton', suv: 'SUV / Van',
+      camper: 'Camper / Caravan', sports: 'Sports / Supercar',
+    };
+    var SERVICE_LABELS = {
+      inside_only: 'Inside only', outside_only: 'Outside only',
+      inside_and_outside: 'Inside & outside',
+    };
+
+    function fmtGbp(pence) {
+      var p = (pence || 0) / 100;
+      return '£' + (Number.isInteger(p) ? p : p.toFixed(2));
+    }
+
+    function dateKeyOffset(days) {
+      var d = new Date();
+      d.setDate(d.getDate() - days);
+      return getDateKey(d);
+    }
+
+    function logFilters() {
+      var f = { pin: sessionStorage.getItem('boardPin') };
+      var period = logPeriod.value;
+      var todayKey = getDateKey(new Date());
+      if (period === 'today') { f.from = todayKey; f.to = todayKey; }
+      else if (period === 'week') { f.from = dateKeyOffset(6); f.to = todayKey; }
+      else if (period === 'month') { f.from = dateKeyOffset(29); f.to = todayKey; }
+      // 'all' -> no date bounds
+      if (logWorker.value) f.recorded_by = Number(logWorker.value);
+      if (logPayment.value) f.payment_method = logPayment.value;
+      return f;
+    }
+
+    function fetchWalkinLog() {
+      var pin = sessionStorage.getItem('boardPin');
+      if (!pin) return;
+      logList.innerHTML = '<div class="loading">Loading log</div>';
+      fetch('/api/walkins-log', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(logFilters()),
+      }).then(function (res) {
+        if (!res.ok) { logList.innerHTML = '<div class="empty-state">Could not load the log.</div>'; return; }
+        res.json().then(function (data) {
+          populateWorkerFilter(data.recorders || []);
+          renderWalkinLog(data.walkins || []);
+        });
+      }).catch(function () {
+        logList.innerHTML = '<div class="empty-state">Network error. Try again.</div>';
+      });
+    }
+
+    function populateWorkerFilter(recorders) {
+      var current = logWorker.value;
+      var html = '<option value="">All staff</option>';
+      recorders.forEach(function (r) {
+        html += '<option value="' + r.id + '">' + esc(r.name) + '</option>';
+      });
+      logWorker.innerHTML = html;
+      // Keep the current selection if it still exists in the list.
+      if (current && recorders.some(function (r) { return String(r.id) === current; })) {
+        logWorker.value = current;
+      }
+    }
+
+    function renderWalkinLog(walkins) {
+      if (!walkins.length) {
+        logSummary.innerHTML = '';
+        logList.innerHTML = '<div class="empty-state">No walk-ins for this filter</div>';
+        return;
+      }
+
+      var total = 0, cash = 0, card = 0;
+      walkins.forEach(function (w) {
+        total += w.price || 0;
+        if (w.payment_method === 'cash') cash += w.price || 0;
+        else if (w.payment_method === 'card') card += w.price || 0;
+      });
+
+      logSummary.innerHTML =
+        '<div class="stat"><div class="num">' + walkins.length + '</div><div class="label">Walk-ins</div></div>' +
+        '<div class="stat"><div class="num">' + fmtGbp(total) + '</div><div class="label">Total</div></div>' +
+        '<div class="stat"><div class="num">' + fmtGbp(cash) + '</div><div class="label">Cash</div></div>' +
+        '<div class="stat"><div class="num">' + fmtGbp(card) + '</div><div class="label">Card</div></div>';
+
+      logList.innerHTML = walkins.map(function (w) {
+        var size = SIZE_LABELS[w.car_size] || w.car_size;
+        var service = SERVICE_LABELS[w.service_type] || w.service_type;
+        var payClass = w.payment_method === 'cash' ? 'pay-cash' : 'pay-card';
+        var payLabel = w.payment_method === 'cash' ? 'Cash' : 'Card';
+        var email = w.customer_email ? '<div class="log-email">' + esc(w.customer_email) + '</div>' : '';
+        return '<div class="log-card">' +
+            '<div class="log-main">' +
+              '<div class="log-line">' +
+                '<span class="log-price">' + fmtGbp(w.price) + '</span>' +
+                '<span class="log-pill ' + payClass + '">' + payLabel + '</span>' +
+              '</div>' +
+              '<div class="log-line">' +
+                '<span class="log-pill">' + esc(size) + '</span>' +
+                '<span class="log-pill">' + esc(service) + '</span>' +
+              '</div>' +
+              email +
+            '</div>' +
+            '<div class="log-meta">' +
+              '<span class="log-who">' + esc(w.recorded_by_name || 'Unknown') + '</span>' +
+              '<span class="log-when">' + esc(fmtLogTime(w.created_at)) + '</span>' +
+            '</div>' +
+          '</div>';
+      }).join('');
+    }
+
+    // created_at is a UTC SQLite datetime ("YYYY-MM-DD HH:MM:SS").
+    function fmtLogTime(ts) {
+      if (!ts) return '';
+      try {
+        var d = new Date(ts.replace(' ', 'T') + 'Z');
+        if (isNaN(d.getTime())) return ts;
+        return d.toLocaleString('en-GB', {
+          day: '2-digit', month: 'short',
+          hour: '2-digit', minute: '2-digit',
+        });
+      } catch (e) { return ts; }
+    }
+    // ============================ /Walk-in log =============================
+
+    document.getElementById('logout-btn').addEventListener('click', function() {
+      stopAutoRefresh();
+      sessionStorage.removeItem('boardPin');
+      board.style.display = 'none';
+      pinScreen.style.display = 'flex';
+      pinInputs.forEach(function(x) { x.value = ''; });
+      pinError.style.display = 'none';
+      currentPin = '';
+      pinSubmit.disabled = true;
+      pinInputs[0].focus();
+    });
+
+    // Auto-login
+    (function() {
+      var pin = sessionStorage.getItem('boardPin');
+      if (pin) {
+        fetch('/api/bookings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ pin: pin }),
+        }).then(function(res) {
+          if (!res.ok) { sessionStorage.removeItem('boardPin'); pinInputs[0].focus(); return; }
+          res.json().then(function(data) {
+            currentPin = pin;
+            previousBookingCount = data.bookings.length;
+            showBoard(data.bookings, data.walkin_summary);
+          });
+        }).catch(function() { sessionStorage.removeItem('boardPin'); pinInputs[0].focus(); });
+      } else {
+        pinInputs[0].focus();
+      }
+    })();
+  </script>
+</body>
+</html>

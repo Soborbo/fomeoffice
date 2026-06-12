@@ -1,0 +1,85 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #19576d;
+  --color-secondary: #2a7a94;
+  --color-accent: #f5e642;
+  --color-accent-hover: #e6d93d;
+  --color-dark: #1a1a2e;
+  --color-gray-light: #f8f9fa;
+  --color-purple: #4f46e5;
+
+  --font-heading: 'DM Serif Display', serif;
+  --font-body: 'Inter', sans-serif;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: #333;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+  }
+
+  /* Center headings on mobile */
+  @media (max-width: 767px) {
+    h1, h2, h3 {
+      text-align: center;
+    }
+  }
+
+  .container {
+    max-width: 1200px !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@layer components {
+  .stat-card {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .stat-card:nth-child(2) {
+    animation-delay: 0.5s;
+  }
+
+  .stat-card-pulse {
+    animation: pulse-glow 2s ease-in-out infinite;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+  }
+  50% {
+    box-shadow: 0 20px 40px -5px rgba(79, 70, 229, 0.2), 0 16px 20px -6px rgba(79, 70, 229, 0.15);
+  }
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

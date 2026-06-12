@@ -1,0 +1,379 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { m } from '../../../paraglide/messages.js';
+
+const isSuper = Astro.locals.user!.role === 'super_admin';
+---
+<AppLayout title={m.cash_title()} active="cash-deposits">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">{m.cash_title()}</h1>
+    <p class="text-xs text-gray-500">{m.cash_subtitle()}</p>
+  </div>
+
+  <!-- Reconciliation summary -->
+  <section class="mt-5 grid gap-3 sm:grid-cols-4">
+    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-gray-500">{m.cash_collected()}</p>
+      <p id="s-collected" class="mt-1 text-2xl font-semibold text-gray-900">—</p>
+      <p class="mt-1 text-xs text-gray-500">From bookings + walk-ins (cash only)</p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-gray-500">{m.cash_deposited()}</p>
+      <p id="s-deposited" class="mt-1 text-2xl font-semibold text-gray-900">—</p>
+      <p id="s-deposit-count" class="mt-1 text-xs text-gray-500"></p>
+    </div>
+    <div class="rounded-lg border border-amber-300 bg-amber-50 p-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-amber-700">Draft (unconfirmed)</p>
+      <p id="s-draft" class="mt-1 text-2xl font-semibold text-amber-800">—</p>
+      <p id="s-draft-count" class="mt-1 text-xs text-amber-700"></p>
+    </div>
+    <div class="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+      <p class="text-xs uppercase tracking-wide text-gray-500">{m.cash_on_hand()}</p>
+      <p id="s-on-hand" class="mt-1 text-2xl font-semibold">—</p>
+      <p class="mt-1 text-xs text-gray-500">Collected − deposited (confirmed)</p>
+    </div>
+  </section>
+
+  <!-- Always-on draft mode reminder. Cash deposits land here as drafts and
+       only count toward the reconciliation once an admin confirms them. -->
+  <div class="mt-3 rounded-md border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+    <strong>Draft mode is on.</strong>
+    New deposits are saved here as drafts and don't affect the reconciliation
+    until you click <em>Confirm</em> on the row.
+  </div>
+
+  <!-- Filters + new form trigger -->
+  <section class="mt-6 flex flex-wrap items-end justify-between gap-3">
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">From</span>
+        <input id="f-from" type="date" class="mt-1 rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">To</span>
+        <input id="f-to" type="date" class="mt-1 rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <button id="apply-filter" type="button" class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50">Apply</button>
+    </div>
+    <button id="open-form" type="button" class="rounded-md bg-[#19576d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#134559]">+ New deposit</button>
+  </section>
+
+  <!-- New deposit form (collapsed by default) -->
+  <section id="form-section" class="mt-5 hidden rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+    <div id="status-bar" class="mb-3 hidden rounded-md p-3 text-sm" role="alert"></div>
+    <form id="deposit-form" class="space-y-4" novalidate>
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Deposit date</span>
+          <input id="f-date" type="date" required class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Amount (£)</span>
+          <input id="f-amount" type="number" step="0.01" min="0.01" inputmode="decimal" required class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+      </div>
+      <label class="block">
+        <span class="block text-sm font-medium text-gray-700">Reference (optional)</span>
+        <input id="f-reference" type="text" maxlength="120" placeholder="Paying-in slip number, bank ref…" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-sm font-medium text-gray-700">Note (optional)</span>
+        <textarea id="f-note" rows="2" maxlength="500" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none"></textarea>
+      </label>
+      <div class="flex items-center justify-end gap-2">
+        <button id="cancel-form" type="button" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+        <button id="submit" type="submit" class="rounded-md bg-[#19576d] px-6 py-2 text-base font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- List -->
+  <section class="mt-5 rounded-lg border border-gray-200 bg-white shadow-sm">
+    <table class="w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr>
+          <th class="px-4 py-2">Date</th>
+          <th class="px-4 py-2 text-end">Amount</th>
+          <th class="px-4 py-2">Status</th>
+          <th class="px-4 py-2">Reference</th>
+          <th class="px-4 py-2">Note</th>
+          <th class="px-4 py-2">Recorded by</th>
+          <th class="px-4 py-2 text-end"></th>
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+    <p id="empty-row" class="hidden p-6 text-center text-gray-500">No deposits in the selected range.</p>
+  </section>
+
+  <script is:inline define:vars={{ isSuper }}>
+    (function () {
+      var sCollected = document.getElementById('s-collected');
+      var sDeposited = document.getElementById('s-deposited');
+      var sOnHand = document.getElementById('s-on-hand');
+      var sDepositCount = document.getElementById('s-deposit-count');
+      var sDraft = document.getElementById('s-draft');
+      var sDraftCount = document.getElementById('s-draft-count');
+      var rows = document.getElementById('rows');
+      var emptyRow = document.getElementById('empty-row');
+
+      var fFrom = document.getElementById('f-from');
+      var fTo = document.getElementById('f-to');
+      var applyBtn = document.getElementById('apply-filter');
+
+      var formSection = document.getElementById('form-section');
+      var openFormBtn = document.getElementById('open-form');
+      var cancelFormBtn = document.getElementById('cancel-form');
+      var form = document.getElementById('deposit-form');
+      var status = document.getElementById('status-bar');
+      var submit = document.getElementById('submit');
+
+      var fDate = document.getElementById('f-date');
+      var fAmount = document.getElementById('f-amount');
+      var fReference = document.getElementById('f-reference');
+      var fNote = document.getElementById('f-note');
+
+      function fmtMoney(pence) {
+        if (pence == null) return '—';
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function poundsToPence(value) {
+        if (value === '' || value === null || value === undefined) return 0;
+        var n = Number(value);
+        if (!isFinite(n)) return 0;
+        return Math.round(n * 100);
+      }
+
+      function todayUk() {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(new Date());
+      }
+
+      function shiftDate(iso, days) {
+        var d = new Date(iso + 'T00:00:00Z');
+        d.setUTCDate(d.getUTCDate() + days);
+        return d.toISOString().slice(0, 10);
+      }
+
+      function showStatus(msg, kind) {
+        status.textContent = msg;
+        status.className = 'mb-3 rounded-md p-3 text-sm ';
+        if (kind === 'error') status.className += 'border border-red-300 bg-red-50 text-red-800';
+        else if (kind === 'success') status.className += 'border border-green-300 bg-green-50 text-green-800';
+        else status.className += 'border border-gray-300 bg-gray-50 text-gray-700';
+      }
+      function clearStatus() { status.className = 'mb-3 hidden rounded-md p-3 text-sm'; }
+
+      function td(text, cls) {
+        var el = document.createElement('td');
+        el.className = 'px-4 py-2 ' + (cls || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      function renderSummary(s) {
+        sCollected.textContent = fmtMoney(s.collected);
+        sDeposited.textContent = fmtMoney(s.deposited);
+        sOnHand.textContent = fmtMoney(s.on_hand);
+        sOnHand.className = 'mt-1 text-2xl font-semibold ' +
+          (s.on_hand > 0 ? 'text-amber-700' : (s.on_hand < 0 ? 'text-red-700' : 'text-green-700'));
+        sDepositCount.textContent = s.deposit_count + ' confirmed' + (s.deposit_count === 1 ? '' : 's') + ' in range';
+        sDraft.textContent = fmtMoney(s.draft_total || 0);
+        var draftCount = s.draft_count || 0;
+        sDraftCount.textContent = draftCount + ' draft' + (draftCount === 1 ? '' : 's') + ' awaiting confirmation';
+      }
+
+      function renderRows(items) {
+        rows.innerHTML = '';
+        if (!items || items.length === 0) {
+          emptyRow.classList.remove('hidden');
+          return;
+        }
+        emptyRow.classList.add('hidden');
+        items.forEach(function (it) {
+          var tr = document.createElement('tr');
+          var isDraft = it.is_confirmed !== 1;
+          if (isDraft) tr.className = 'bg-amber-50/30';
+
+          tr.appendChild(td(it.deposit_date));
+          tr.appendChild(td(fmtMoney(it.amount), 'px-4 py-2 text-end font-semibold tabular-nums text-gray-900'));
+
+          // Status pill
+          var statusCell = document.createElement('td');
+          statusCell.className = 'px-4 py-2';
+          var pill = document.createElement('span');
+          pill.className = 'inline-block rounded-full px-2 py-1 text-xs font-semibold ' +
+            (isDraft ? 'bg-amber-100 text-amber-800' : 'bg-green-100 text-green-800');
+          pill.textContent = isDraft ? 'Draft' : 'Confirmed';
+          statusCell.appendChild(pill);
+          if (!isDraft && it.confirmed_by_name) {
+            var sub = document.createElement('span');
+            sub.className = 'ms-2 text-xs text-gray-500';
+            sub.textContent = 'by ' + it.confirmed_by_name;
+            statusCell.appendChild(sub);
+          }
+          tr.appendChild(statusCell);
+
+          tr.appendChild(td(it.reference || '—'));
+          tr.appendChild(td(it.note || '—', 'px-4 py-2 text-gray-600 text-xs'));
+          tr.appendChild(td(it.recorded_by_name || '—', 'px-4 py-2 text-gray-500 text-xs'));
+
+          // Action cell — Confirm for drafts, Delete for super_admin.
+          var actionCell = document.createElement('td');
+          actionCell.className = 'px-4 py-2 text-end whitespace-nowrap';
+          if (isDraft) {
+            var confirmBtn = document.createElement('button');
+            confirmBtn.type = 'button';
+            confirmBtn.textContent = 'Confirm';
+            confirmBtn.className = 'me-2 rounded-md bg-[#19576d] px-3 py-1 text-xs font-semibold text-white hover:bg-[#134559] disabled:opacity-50';
+            confirmBtn.addEventListener('click', function () {
+              confirmBtn.disabled = true;
+              confirmBtn.textContent = 'Confirming…';
+              fetch('/api/app/cash-deposits/' + it.id, {
+                method: 'PATCH',
+                credentials: 'same-origin',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: 'confirm' }),
+              })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+                .then(function (res) {
+                  if (!res.ok) {
+                    alert((res.data && res.data.error) || 'Confirm failed');
+                    confirmBtn.disabled = false;
+                    confirmBtn.textContent = 'Confirm';
+                    return;
+                  }
+                  load();
+                })
+                .catch(function (err) {
+                  alert('Network error. ' + err.message);
+                  confirmBtn.disabled = false;
+                  confirmBtn.textContent = 'Confirm';
+                });
+            });
+            actionCell.appendChild(confirmBtn);
+          }
+          if (isSuper) {
+            var delBtn = document.createElement('button');
+            delBtn.type = 'button';
+            delBtn.textContent = 'Delete';
+            delBtn.className = 'text-xs text-red-700 hover:underline';
+            delBtn.addEventListener('click', function () {
+              if (!confirm('Soft-delete deposit ' + fmtMoney(it.amount) + ' on ' + it.deposit_date + '?')) return;
+              fetch('/api/app/cash-deposits/' + it.id, {
+                method: 'DELETE',
+                credentials: 'same-origin',
+                headers: { 'Origin': window.location.origin },
+              })
+                .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+                .then(function (res) {
+                  if (!res.ok) { alert(res.data.error || 'Delete failed'); return; }
+                  load();
+                })
+                .catch(function (err) { alert('Network error. ' + err.message); });
+            });
+            actionCell.appendChild(delBtn);
+          }
+          tr.appendChild(actionCell);
+
+          rows.appendChild(tr);
+        });
+      }
+
+      function load() {
+        var qs = [];
+        if (fFrom.value) qs.push('from=' + encodeURIComponent(fFrom.value));
+        if (fTo.value) qs.push('to=' + encodeURIComponent(fTo.value));
+        var url = '/api/app/cash-deposits' + (qs.length ? '?' + qs.join('&') : '');
+        fetch(url, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            renderSummary(data.summary);
+            renderRows(data.items);
+          })
+          .catch(function (err) {
+            showStatus('Failed to load deposits. ' + err.message, 'error');
+          });
+      }
+
+      applyBtn.addEventListener('click', load);
+
+      openFormBtn.addEventListener('click', function () {
+        formSection.classList.remove('hidden');
+        clearStatus();
+        if (!fDate.value) fDate.value = todayUk();
+        fAmount.focus();
+      });
+
+      cancelFormBtn.addEventListener('click', function () {
+        formSection.classList.add('hidden');
+        form.reset();
+        clearStatus();
+      });
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearStatus();
+
+        if (!fDate.value || !fAmount.value) {
+          showStatus('Date and amount are required.', 'error');
+          return;
+        }
+        var amount = poundsToPence(fAmount.value);
+        if (amount <= 0) {
+          showStatus('Amount must be greater than zero.', 'error');
+          return;
+        }
+
+        submit.disabled = true;
+        submit.textContent = 'Saving…';
+        fetch('/api/app/cash-deposits', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({
+            deposit_date: fDate.value,
+            amount: amount,
+            reference: fReference.value || '',
+            note: fNote.value || '',
+          }),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            submit.disabled = false;
+            submit.textContent = 'Save';
+            if (!res.ok) {
+              showStatus(res.data.error || 'Save failed.', 'error');
+              return;
+            }
+            form.reset();
+            formSection.classList.add('hidden');
+            load();
+          })
+          .catch(function (err) {
+            submit.disabled = false;
+            submit.textContent = 'Save';
+            showStatus('Network error. ' + err.message, 'error');
+          });
+      });
+
+      // Boot — last 30 days by default.
+      var today = todayUk();
+      fTo.value = today;
+      fFrom.value = shiftDate(today, -29);
+      load();
+    })();
+  </script>
+</AppLayout>

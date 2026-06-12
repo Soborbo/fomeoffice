@@ -1,0 +1,42 @@
+{
+  "name": "aquwash",
+  "type": "module",
+  "version": "0.0.1",
+  "overrides": {
+    "vite": "^7"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "deploy": "astro build && wrangler deploy",
+    "deploy:cron": "wrangler deploy -c wrangler-cron.json",
+    "preview": "astro preview",
+    "astro": "astro",
+    "typecheck": "astro check",
+    "db:migrate:local": "node scripts/run-migrations.mjs --local",
+    "db:migrate": "node scripts/run-migrations.mjs",
+    "db:reset:local": "node scripts/reset-local-db.mjs",
+    "db:seed:local": "wrangler d1 execute carwash-booking-db --local --file=./migrations/seed.sql",
+    "db:shell:local": "wrangler d1 execute carwash-booking-db --local --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
+    "db:shell": "wrangler d1 execute carwash-booking-db --remote --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
+    "db:bootstrap:local": "node scripts/seed-bootstrap.mjs",
+    "db:bootstrap": "node scripts/seed-bootstrap.mjs --remote"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.1.4",
+    "@astrojs/sitemap": "^3.7.2",
+    "@inlang/paraglide-js": "^2.17.0",
+    "@tailwindcss/vite": "^4.1.17",
+    "astro": "^6.1.1",
+    "resend": "^6.5.2",
+    "tailwindcss": "^4.1.17",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.6",
+    "@cloudflare/workers-types": "^4.20250214.0",
+    "@types/node": "^22.10.0",
+    "typescript": "^5.7.0",
+    "wrangler": "^4.49.0"
+  }
+}

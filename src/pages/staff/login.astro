@@ -1,0 +1,167 @@
+---
+export const prerender = false;
+
+import { getDb } from '../../lib/db';
+import { getSessionUser, readSessionCookie } from '../../lib/auth/session';
+
+// Already signed in? Send them on.
+const token = readSessionCookie(Astro.request);
+if (token) {
+  try {
+    const user = await getSessionUser(getDb(), token);
+    if (user) {
+      const next = Astro.url.searchParams.get('next');
+      const safeNext =
+        next && next.startsWith('/') && !next.startsWith('//') ? next : '/app/staff/me';
+      return Astro.redirect(safeNext, 302);
+    }
+  } catch (err) {
+    console.error('[/staff/login] session check failed:', err);
+  }
+}
+
+const next = Astro.url.searchParams.get('next');
+const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '';
+---
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Staff sign in — Bristol Car Wash</title>
+  <style is:inline>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f3f4f6; color: #1f2937; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 1.5rem; -webkit-tap-highlight-color: transparent; }
+    .pin-box { background: #fff; border-radius: 1.25rem; padding: 2rem 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.08); text-align: center; max-width: 380px; width: 100%; }
+    .pin-box h1 { font-size: 1.5rem; color: #19576d; margin-bottom: .25rem; }
+    .pin-box p { color: #6b7280; font-size: .95rem; margin-bottom: 1.5rem; }
+    .pin-display { display: flex; gap: .5rem; justify-content: center; margin-bottom: 1.25rem; }
+    .pin-dot { width: 1rem; height: 1rem; border-radius: 50%; border: 2px solid #d1d5db; transition: all .15s; }
+    .pin-dot.filled { background: #19576d; border-color: #19576d; }
+    .pin-dot.error { border-color: #ef4444; animation: shake .4s; }
+    @keyframes shake { 0%,100%{transform:translateX(0)} 25%{transform:translateX(-6px)} 75%{transform:translateX(6px)} }
+    .keypad { display: grid; grid-template-columns: repeat(3, 1fr); gap: .65rem; margin-bottom: 1rem; }
+    .key { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: .65rem; padding: 1.1rem 0; font-size: 1.5rem; font-weight: 600; color: #19576d; cursor: pointer; user-select: none; transition: background .1s; }
+    .key:active { background: #e5e7eb; }
+    .key.action { background: #19576d; color: #fff; border-color: #19576d; font-size: .9rem; font-weight: 700; }
+    .key.action:active { background: #134559; }
+    .key.subtle { background: transparent; border-color: transparent; color: #6b7280; font-size: .9rem; font-weight: 500; }
+    .pin-error { color: #ef4444; font-size: .85rem; margin-top: 1rem; min-height: 1.25rem; }
+    .alt-link { display: inline-block; margin-top: 1.5rem; color: #6b7280; font-size: .85rem; text-decoration: underline; }
+    .alt-link:hover { color: #19576d; }
+  </style>
+</head>
+<body>
+  <div class="pin-box" role="main">
+    <h1>Staff sign in</h1>
+    <p>Enter your PIN to view your hours and pay.</p>
+
+    <div class="pin-display" id="pin-display">
+      <div class="pin-dot" data-i="0"></div>
+      <div class="pin-dot" data-i="1"></div>
+      <div class="pin-dot" data-i="2"></div>
+      <div class="pin-dot" data-i="3"></div>
+    </div>
+
+    <div class="keypad" role="group" aria-label="PIN keypad">
+      <button type="button" class="key" data-digit="1">1</button>
+      <button type="button" class="key" data-digit="2">2</button>
+      <button type="button" class="key" data-digit="3">3</button>
+      <button type="button" class="key" data-digit="4">4</button>
+      <button type="button" class="key" data-digit="5">5</button>
+      <button type="button" class="key" data-digit="6">6</button>
+      <button type="button" class="key" data-digit="7">7</button>
+      <button type="button" class="key" data-digit="8">8</button>
+      <button type="button" class="key" data-digit="9">9</button>
+      <button type="button" class="key subtle" id="key-clear">Clear</button>
+      <button type="button" class="key" data-digit="0">0</button>
+      <button type="button" class="key subtle" id="key-back">⌫</button>
+    </div>
+
+    <div class="pin-error" id="pin-error" aria-live="polite"></div>
+
+    <a href="/login" class="alt-link">Admin sign-in →</a>
+  </div>
+
+  <script is:inline define:vars={{ safeNext }}>
+    (function () {
+      var pin = '';
+      var dots = document.querySelectorAll('.pin-dot');
+      var errEl = document.getElementById('pin-error');
+      var maxLen = 4;
+
+      function render() {
+        dots.forEach(function (d, i) {
+          d.classList.toggle('filled', i < pin.length);
+          d.classList.remove('error');
+        });
+      }
+      function flashError(msg) {
+        errEl.textContent = msg;
+        dots.forEach(function (d) { d.classList.add('error'); });
+        setTimeout(function () { dots.forEach(function (d) { d.classList.remove('error'); }); }, 400);
+      }
+      function clearPin() {
+        pin = '';
+        errEl.textContent = '';
+        render();
+      }
+
+      document.querySelectorAll('.key[data-digit]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (pin.length >= maxLen) return;
+          pin += btn.getAttribute('data-digit');
+          render();
+          if (pin.length === maxLen) submit();
+        });
+      });
+
+      document.getElementById('key-clear').addEventListener('click', clearPin);
+      document.getElementById('key-back').addEventListener('click', function () {
+        pin = pin.slice(0, -1);
+        errEl.textContent = '';
+        render();
+      });
+
+      // Allow keyboard input too — handy for desktop testing.
+      document.addEventListener('keydown', function (e) {
+        if (e.key >= '0' && e.key <= '9' && pin.length < maxLen) {
+          pin += e.key;
+          render();
+          if (pin.length === maxLen) submit();
+        } else if (e.key === 'Backspace') {
+          pin = pin.slice(0, -1);
+          errEl.textContent = '';
+          render();
+        } else if (e.key === 'Escape') {
+          clearPin();
+        }
+      });
+
+      function submit() {
+        var attempt = pin;
+        fetch('/api/staff/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+          credentials: 'same-origin',
+          body: JSON.stringify({ pin: attempt }),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              flashError(res.data && res.data.error ? res.data.error : 'Invalid PIN');
+              setTimeout(clearPin, 350);
+              return;
+            }
+            window.location.href = safeNext || '/app/staff/me';
+          })
+          .catch(function () {
+            flashError('Network error. Try again.');
+            setTimeout(clearPin, 350);
+          });
+      }
+    })();
+  </script>
+</body>
+</html>

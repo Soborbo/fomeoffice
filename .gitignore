@@ -1,0 +1,37 @@
+# build output
+dist/
+.wrangler/
+# generated types
+.astro/
+# paraglide-js generated runtime + messages (compiled from messages/*.json)
+src/paraglide/
+
+# wrangler local dev secrets (never commit)
+.dev.vars
+
+# dependencies
+node_modules/
+
+# logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+
+# environment variables
+.env
+.env.production
+
+# macOS-specific files
+.DS_Store
+
+# jetbrains setting folder
+.idea/
+
+# local verification screenshots
+foam-*.png
+.playwright-mcp/
+
+# original repo archive (extracted copy kept in references/)
+references/*.zip

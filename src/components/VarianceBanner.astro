@@ -1,0 +1,109 @@
+---
+// Variance banner — fetches /api/app/variance/banner and renders a 3-state pill
+// for today + week. Vanilla JS, no React. Polls every 60 seconds.
+// Hidden on first paint until the first response lands so we don't flash a
+// "loading" state to admins who refresh quickly.
+---
+
+<div id="variance-banner" class="hidden border-b border-gray-200 bg-white" role="status" aria-live="polite">
+  <div class="mx-auto flex max-w-6xl flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+    <div class="flex items-center gap-3">
+      <span id="vb-pill" class="inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold"></span>
+      <span id="vb-today-text" class="text-sm text-gray-700"></span>
+    </div>
+    <div class="flex items-center gap-3">
+      <span id="vb-week-text" class="text-sm text-gray-600"></span>
+      <span id="vb-pattern" class="hidden rounded-md bg-red-100 px-2 py-1 text-xs font-semibold text-red-800"></span>
+    </div>
+  </div>
+</div>
+
+<script is:inline>
+  (function () {
+    var POLL_MS = 60000;
+    var el = document.getElementById('variance-banner');
+    var pill = document.getElementById('vb-pill');
+    var todayText = document.getElementById('vb-today-text');
+    var weekText = document.getElementById('vb-week-text');
+    var pattern = document.getElementById('vb-pattern');
+    if (!el || !pill || !todayText || !weekText || !pattern) return;
+
+    function fmtMoney(pence, currency) {
+      var sign = pence < 0 ? '-' : '';
+      var abs = Math.abs(pence);
+      var pounds = Math.floor(abs / 100);
+      var pennies = abs % 100;
+      var symbol = currency === 'GBP' ? '£' : currency + ' ';
+      if (pennies === 0) return sign + symbol + pounds;
+      return sign + symbol + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+    }
+
+    function setState(stateClass, label, pillText) {
+      pill.className = 'inline-flex items-center rounded-full px-3 py-1 text-sm font-semibold ' + stateClass;
+      pill.textContent = pillText;
+      el.setAttribute('data-state', label);
+    }
+
+    function render(data) {
+      var t = data.today;
+      var threshold = data.settings.cash_variance_threshold;
+      var currency = data.settings.currency;
+
+      if (!t.filled) {
+        setState('bg-gray-200 text-gray-700', 'pending', 'Not submitted');
+        todayText.textContent =
+          'Today expected: ' + fmtMoney(t.expected_cash, currency) + ' cash, ' + fmtMoney(t.expected_card, currency) + ' card';
+      } else {
+        var v = t.cash_variance;
+        var abs = Math.abs(v);
+        if (v === 0) {
+          setState('bg-green-100 text-green-800', 'on_target', 'On the money');
+          todayText.textContent =
+            'Today: ' + fmtMoney(t.cash_total, currency) + ' cash counted (matches expected)';
+        } else if (abs <= threshold) {
+          setState('bg-yellow-100 text-yellow-800', 'minor', 'Minor variance: ' + fmtMoney(v, currency));
+          todayText.textContent =
+            'Today: ' + fmtMoney(t.cash_total, currency) + ' cash counted vs ' + fmtMoney(t.expected_cash, currency) + ' expected';
+        } else {
+          var label = v < 0 ? 'SHORT' : 'OVER';
+          setState('bg-red-100 text-red-800', 'major', label + ' ' + fmtMoney(abs, currency) + ' — see notes');
+          todayText.textContent =
+            'Today: ' + fmtMoney(t.cash_total, currency) + ' cash counted vs ' + fmtMoney(t.expected_cash, currency) + ' expected';
+        }
+      }
+
+      var wv = data.week.cash_variance;
+      var wDays = data.week.days;
+      if (wDays > 0) {
+        weekText.textContent = 'Last ' + wDays + ' days: ' + fmtMoney(wv, currency) + ' cash variance';
+      } else {
+        weekText.textContent = 'No prior days recorded';
+      }
+
+      if (data.pattern.triggered) {
+        pattern.textContent =
+          'Pattern alert: ' + data.pattern.consecutive_short_days + ' short days in a row';
+        pattern.classList.remove('hidden');
+      } else {
+        pattern.classList.add('hidden');
+      }
+
+      el.classList.remove('hidden');
+    }
+
+    function fetchBanner() {
+      fetch('/api/app/variance/banner', { credentials: 'same-origin' })
+        .then(function (res) {
+          if (!res.ok) throw new Error('banner fetch failed: ' + res.status);
+          return res.json();
+        })
+        .then(render)
+        .catch(function (err) {
+          console.warn('[variance-banner]', err);
+        });
+    }
+
+    fetchBanner();
+    setInterval(fetchBanner, POLL_MS);
+  })();
+</script>

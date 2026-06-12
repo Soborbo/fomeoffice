@@ -1,0 +1,19 @@
+# Foam Office - foamoffice.co.uk
+User-agent: *
+Allow: /
+Disallow: /api/
+
+# AI crawlers welcome
+User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: GoogleOther
+Allow: /
+
+Sitemap: https://foamoffice.co.uk/sitemap-index.xml

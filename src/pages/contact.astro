@@ -1,0 +1,323 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+
+const faqs = [
+  {
+    question: 'Do I need to book in advance?',
+    answer: 'No booking required! Simply drive in during our opening hours. For larger vehicles or full valets, we recommend calling ahead to ensure minimal wait time.',
+  },
+  {
+    question: 'How long does a full valet take?',
+    answer: 'A full valet typically takes around 5 hours as the seats and interior need time to dry. We recommend dropping off your car and collecting it later. Last full valet booking is at 2pm to allow drying time before closing.',
+  },
+  {
+    question: 'Do you offer mobile valeting services?',
+    answer: 'Yes, we offer mobile valeting for vans and larger vehicles. Contact us to discuss your requirements and get a quote.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept cash, all major credit and debit cards, and contactless payments including Apple Pay and Google Pay.',
+  },
+];
+---
+
+<Layout title="Contact">
+  <!-- Page Header -->
+  <section class="relative bg-primary py-20">
+    <div class="absolute inset-0 bg-cover bg-center opacity-30" style="background-image: url('https://images.unsplash.com/photo-1520340356584-f9917d1eea6f?w=1920&h=400&fit=crop');"></div>
+    <div class="container mx-auto px-4 relative z-10 text-center">
+      <h1 class="text-4xl md:text-5xl font-heading font-bold text-white mb-4">Contact HR</h1>
+      <p class="font-memo text-xs uppercase tracking-[0.2em] text-foam-mist mb-4">The door is always open. It's a car wash - there isn't really a door.</p>
+      <div class="flex items-center justify-center gap-2 text-gray-300">
+        <a href="/" class="hover:text-accent transition-colors">Home</a>
+        <span>—</span>
+        <span class="text-accent">Contact</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- Contact Form Section -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16">
+        <!-- Contact Info -->
+        <div>
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Contact</p>
+          <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-6">
+            Get In Touch
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Have a question or want to book a service? Get in touch with us. We're here to help keep your vehicle looking its best.
+          </p>
+
+          <div class="grid md:grid-cols-2 gap-6">
+            <div>
+              <div class="flex items-start gap-3 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Address</h4>
+                  <p class="text-gray-600 text-sm">290-294 Southmead Rd<br/>Bristol BS10 5EN</p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-start gap-3 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Phone</h4>
+                  <p class="text-gray-600 text-sm"><a href="tel:07977889747" class="hover:text-purple transition-colors">07 977 889747</a></p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-start gap-3 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Email</h4>
+                  <p class="text-gray-600 text-sm"><a href="mailto:hello@foamoffice.co.uk" class="hover:text-purple transition-colors">hello@foamoffice.co.uk</a></p>
+                </div>
+              </div>
+            </div>
+            <div>
+              <div class="flex items-start gap-3 mb-4">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple mt-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <h4 class="font-semibold text-gray-900 mb-1">Open Hours</h4>
+                  <p class="text-gray-600 text-sm">Mon-Sat: 9am-7pm<br/>Sun: 9am-5pm</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Contact Form -->
+        <div class="bg-gray-50 rounded-2xl p-8">
+          <h3 class="text-xl font-semibold text-gray-900 mb-6">Send us a message</h3>
+          <form id="contact-form" class="space-y-4 relative">
+            <div class="grid md:grid-cols-2 gap-4">
+              <input
+                type="text"
+                name="firstName"
+                placeholder="First Name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-colors"
+              />
+              <input
+                type="text"
+                name="lastName"
+                placeholder="Last Name"
+                required
+                class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-colors"
+              />
+            </div>
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-colors"
+            />
+            <textarea
+              name="message"
+              placeholder="Message"
+              rows="5"
+              required
+              class="w-full px-4 py-3 rounded-lg border border-gray-200 focus:border-purple focus:ring-2 focus:ring-purple/20 outline-none transition-colors resize-none"
+            ></textarea>
+
+            <!-- Honeypot - invisible to users, bots fill it in -->
+            <div class="absolute opacity-0 h-0 overflow-hidden -z-10" aria-hidden="true" tabindex="-1">
+              <label>Website <input type="text" name="website" autocomplete="off" tabindex="-1" /></label>
+            </div>
+
+            <!-- Cloudflare Turnstile -->
+            <div class="cf-turnstile" data-sitekey={import.meta.env.TURNSTILE_SITE_KEY || '1x00000000000000000000AA'} data-theme="light"></div>
+
+            <button
+              type="submit"
+              id="contact-submit"
+              class="w-full bg-primary text-white py-3 rounded-full font-medium hover:bg-secondary transition-colors"
+            >
+              Send Message
+            </button>
+          </form>
+          <div id="form-success" class="hidden mt-4 p-4 bg-green-100 text-green-700 rounded-lg">
+            Thank you for your message! We'll get back to you soon.
+          </div>
+          <div id="form-error" class="hidden mt-4 p-4 bg-red-100 text-red-700 rounded-lg">
+            There was an error sending your message. Please try again.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Map Section -->
+  <section class="h-96 bg-gray-200">
+    <iframe
+      src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2484.4396766373!2d-2.5943!3d51.5089!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x48718e8b9c000001%3A0x1234567890abcdef!2s290-294%20Southmead%20Rd%2C%20Bristol%20BS10%205EN!5e0!3m2!1sen!2suk!4v1701700000000!5m2!1sen!2suk"
+      width="100%"
+      height="100%"
+      style="border:0;"
+      allowfullscreen=""
+      loading="lazy"
+      referrerpolicy="no-referrer-when-downgrade"
+      title="Foam Office location - 290-294 Southmead Road, Bristol"
+    ></iframe>
+  </section>
+
+  <!-- FAQ Section -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-start">
+        <div class="relative">
+          <img
+            src="https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=500&h=600&fit=crop"
+            alt="Customer Service"
+            class="rounded-2xl shadow-xl"
+          />
+          <div class="absolute bottom-8 left-8 bg-white rounded-xl shadow-lg p-6 max-w-xs">
+            <h4 class="font-semibold text-gray-900 mb-3">Our Location</h4>
+            <div class="space-y-2 text-sm text-gray-600">
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                </svg>
+                290-294 Southmead Rd, Bristol
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                hello@foamoffice.co.uk
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                07 977 889747
+              </p>
+            </div>
+          </div>
+        </div>
+        <div>
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">FAQs</p>
+          <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-6">
+            Frequently Asked Questions
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Got questions? We've got answers. If you can't find what you're looking for, feel free to give us a call or send us a message.
+          </p>
+          <div class="space-y-4">
+            {faqs.map((faq, index) => (
+              <div class="border border-gray-200 rounded-xl overflow-hidden">
+                <button
+                  class="w-full flex items-center justify-between p-4 text-left bg-white hover:bg-gray-50 transition-colors faq-toggle"
+                  data-index={index}
+                >
+                  <span class="font-medium text-gray-900">{faq.question}</span>
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-500 faq-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                  </svg>
+                </button>
+                <div class="hidden faq-content px-4 pb-4">
+                  <p class="text-gray-600 text-sm">{faq.answer}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  // FAQ Toggle
+  document.querySelectorAll('.faq-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const content = button.nextElementSibling;
+      const icon = button.querySelector('.faq-icon');
+      content?.classList.toggle('hidden');
+      icon?.classList.toggle('rotate-180');
+    });
+  });
+
+  // Contact Form
+  const form = document.getElementById('contact-form') as HTMLFormElement;
+  const submitBtn = document.getElementById('contact-submit') as HTMLButtonElement;
+  const successMessage = document.getElementById('form-success');
+  const errorMessage = document.getElementById('form-error');
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(form);
+    const data = {
+      firstName: formData.get('firstName') as string,
+      lastName: formData.get('lastName') as string,
+      email: formData.get('email') as string,
+      message: formData.get('message') as string,
+      website: formData.get('website') as string, // honeypot
+      turnstileToken: formData.get('cf-turnstile-response') as string,
+    };
+
+    // Loading state
+    const originalText = submitBtn.textContent;
+    submitBtn.textContent = 'Sending...';
+    submitBtn.disabled = true;
+
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+      });
+
+      if (response.ok) {
+        successMessage?.classList.remove('hidden');
+        errorMessage?.classList.add('hidden');
+        form.reset();
+        // Reset Turnstile widget
+        if ((window as any).turnstile) {
+          (window as any).turnstile.reset();
+        }
+        setTimeout(() => {
+          successMessage?.classList.add('hidden');
+        }, 8000);
+      } else {
+        const result = (await response.json()) as { error?: string };
+        errorMessage!.textContent = result.error || 'There was an error sending your message. Please try again.';
+        errorMessage?.classList.remove('hidden');
+        successMessage?.classList.add('hidden');
+        // Reset Turnstile on failure
+        if ((window as any).turnstile) {
+          (window as any).turnstile.reset();
+        }
+      }
+    } catch (error) {
+      errorMessage?.classList.remove('hidden');
+      successMessage?.classList.add('hidden');
+      if ((window as any).turnstile) {
+        (window as any).turnstile.reset();
+      }
+    } finally {
+      submitBtn.textContent = originalText;
+      submitBtn.disabled = false;
+    }
+  });
+</script>
+
+<!-- Cloudflare Turnstile -->
+<script is:inline src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

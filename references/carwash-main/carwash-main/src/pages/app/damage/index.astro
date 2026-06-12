@@ -1,0 +1,200 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+const isSuper = Astro.locals.user!.role === 'super_admin';
+---
+<AppLayout title="Damage reports" active="damage">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">Damage reports</h1>
+    <a
+      href="/app/damage/new"
+      class="rounded-md bg-[#19576d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#134559]"
+    >New damage report</a>
+  </div>
+
+  <section class="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div class="grid gap-3 sm:grid-cols-3">
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">From</span>
+        <input id="f-from" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">To</span>
+        <input id="f-to" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">Status</span>
+        <select id="f-status" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+          <option value="">All</option>
+          <option value="open">Open</option>
+          <option value="in_progress">In progress</option>
+          <option value="resolved">Resolved</option>
+          <option value="escalated">Escalated</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <section class="mt-4 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div id="loading" class="p-8 text-center text-gray-500">Loading…</div>
+    <div id="empty" class="hidden p-8 text-center text-gray-500">No damage reports match these filters.</div>
+    <table id="table" class="hidden w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr>
+          <th class="px-3 py-2">Occurred</th>
+          <th class="px-3 py-2">Category</th>
+          <th class="px-3 py-2">Worker</th>
+          <th class="px-3 py-2">Customer / Reg</th>
+          <th class="px-3 py-2">Status</th>
+          <th class="px-3 py-2">Photos</th>
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </section>
+
+  <script is:inline define:vars={{ isSuper }}>
+    (function () {
+      var fFrom = document.getElementById('f-from');
+      var fTo = document.getElementById('f-to');
+      var fStatus = document.getElementById('f-status');
+      var loading = document.getElementById('loading');
+      var empty = document.getElementById('empty');
+      var table = document.getElementById('table');
+      var tbody = document.getElementById('rows');
+
+      var STATUS_CLASS = {
+        open:        'bg-amber-100 text-amber-800',
+        in_progress: 'bg-blue-100 text-blue-800',
+        resolved:    'bg-green-100 text-green-800',
+        escalated:   'bg-red-100 text-red-800',
+        cancelled:   'bg-gray-100 text-gray-700',
+      };
+
+      var CATEGORY_LABEL = {
+        scratch: 'Scratch', mirror_damage: 'Mirror', dent: 'Dent',
+        paint_damage: 'Paint', wheel_damage: 'Wheel',
+        interior_damage: 'Interior', glass_damage: 'Glass', other: 'Other',
+      };
+
+      // Reports written before migration 0010 only have `category`. Newer
+      // ones have a JSON-array `categories`. Read either.
+      function categoriesOf(d) {
+        if (d.categories) {
+          try {
+            var p = JSON.parse(d.categories);
+            if (Array.isArray(p) && p.length) return p;
+          } catch (_) { /* fall through */ }
+        }
+        return d.category ? [d.category] : [];
+      }
+
+      function fmtOccurred(iso) {
+        if (!iso) return '';
+        var s = iso.indexOf('T') >= 0 ? iso : iso.replace(' ', 'T');
+        var d = new Date(s);
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleString('en-GB', {
+          day: '2-digit', month: 'short', year: 'numeric',
+          hour: '2-digit', minute: '2-digit', timeZone: 'Europe/London',
+        });
+      }
+
+      function parseKeys(json) {
+        if (!json) return [];
+        try { var p = JSON.parse(json); return Array.isArray(p) ? p : []; }
+        catch (_) { return []; }
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        loading.textContent = 'Loading…';
+        empty.classList.add('hidden');
+        table.classList.add('hidden');
+
+        var qs = new URLSearchParams();
+        if (fFrom.value) qs.set('from', fFrom.value);
+        if (fTo.value) qs.set('to', fTo.value);
+        if (fStatus.value) qs.set('status', fStatus.value);
+
+        fetch('/api/app/damage?' + qs.toString(), { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('list failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            tbody.innerHTML = '';
+            if (!data.items || data.items.length === 0) {
+              loading.classList.add('hidden');
+              empty.classList.remove('hidden');
+              return;
+            }
+            data.items.forEach(function (d) {
+              var tr = document.createElement('tr');
+              tr.className = 'cursor-pointer hover:bg-gray-50';
+              tr.addEventListener('click', function () {
+                window.location.href = '/app/damage/' + d.id;
+              });
+
+              tr.appendChild(td(fmtOccurred(d.occurred_at)));
+              tr.appendChild(td(
+                categoriesOf(d).map(function (c) { return CATEGORY_LABEL[c] || c; }).join(', '),
+              ));
+
+              var workerText = d.worker_responsible_name
+                ? d.worker_responsible_name
+                : '(reported by ' + d.reported_by_name + ')';
+              tr.appendChild(td(workerText));
+
+              var custBits = [];
+              if (d.customer_name) custBits.push(d.customer_name);
+              if (d.vehicle_registration) custBits.push(d.vehicle_registration);
+              tr.appendChild(td(custBits.join(' · ') || '—', custBits.length ? '' : 'text-gray-400'));
+
+              var statusCell = document.createElement('td');
+              statusCell.className = 'px-3 py-2';
+              var pill = document.createElement('span');
+              pill.className = 'inline-block rounded-full px-2 py-1 text-xs font-semibold ' +
+                (STATUS_CLASS[d.resolution_status] || 'bg-gray-100 text-gray-700');
+              pill.textContent = d.resolution_status.replace('_', ' ');
+              statusCell.appendChild(pill);
+              tr.appendChild(statusCell);
+
+              var keys = parseKeys(d.photo_r2_keys);
+              tr.appendChild(td(keys.length ? String(keys.length) + ' photo' + (keys.length > 1 ? 's' : '') : '—',
+                keys.length ? 'text-gray-700' : 'text-gray-400'));
+
+              tbody.appendChild(tr);
+            });
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+          })
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      function td(text, extraClass) {
+        var el = document.createElement('td');
+        el.className = 'px-3 py-2 ' + (extraClass || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      [fFrom, fTo, fStatus].forEach(function (el) { el.addEventListener('change', load); });
+
+      // Default: this calendar month.
+      var now = new Date();
+      var firstOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+      fFrom.value = firstOfMonth.toISOString().slice(0, 10);
+      fTo.value = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/London',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+      }).format(now);
+
+      load();
+    })();
+  </script>
+</AppLayout>

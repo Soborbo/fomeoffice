@@ -1,0 +1,556 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+import { getDb } from '../../../lib/db';
+import { getSettingsBatch } from '../../../lib/db/daily';
+import { isVatRegistered, parseVatRate } from '../../../lib/utils/vat';
+
+const settings = await getSettingsBatch(getDb(), ['vat_registered', 'vat_rate']);
+const vatEnabled = isVatRegistered(settings.vat_registered);
+const vatRate = parseVatRate(settings.vat_rate);
+---
+<AppLayout title="New expense" active="expenses">
+  <div class="flex items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">New expense</h1>
+    <a href="/app/expenses" class="text-sm text-gray-600 hover:text-[#19576d]">← Back to list</a>
+  </div>
+
+  <div id="status-bar" class="mt-3 hidden rounded-md p-3 text-sm" role="alert"></div>
+
+  <form id="expense-form" class="mt-5 space-y-5" novalidate>
+    <section class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Date</span>
+          <input id="f-date" type="date" required class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Amount (£)</span>
+          <input id="f-amount" type="number" step="0.01" min="0.01" inputmode="decimal" required class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+      </div>
+
+      <fieldset class="mt-5">
+        <legend class="text-sm font-medium text-gray-700">Payment method</legend>
+        <div id="f-method" class="mt-2 flex flex-wrap gap-2">
+          <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="method" value="cash" required /> Cash
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="method" value="card" /> Card
+          </label>
+          <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="method" value="bank_transfer" /> Bank transfer
+          </label>
+        </div>
+      </fieldset>
+
+      <fieldset class="mt-5">
+        <legend class="text-sm font-medium text-gray-700">Category</legend>
+        <div id="f-category" class="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="supplies" required /> Supplies
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="staff" /> Staff
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="utilities" /> Utilities
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="equipment" /> Equipment
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="food" /> Food
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="rent" /> Rent
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="maintenance" /> Maintenance
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="marketing" /> Marketing
+          </label>
+          <label class="inline-flex cursor-pointer items-center gap-2 rounded-md border-2 border-gray-300 px-3 py-2 text-sm">
+            <input type="radio" name="category" value="other" /> Other
+          </label>
+        </div>
+      </fieldset>
+    </section>
+
+    <!-- STAFF SECTION — appears only when category=staff -->
+    <section id="staff-section" class="hidden rounded-lg border border-amber-200 bg-amber-50 p-5 shadow-sm">
+      <h2 class="text-base font-semibold text-amber-900">Staff payment details</h2>
+      <p class="mt-1 text-sm text-amber-800">
+        Submitting will create both an expense record and a linked staff_payments row in one transaction.
+      </p>
+
+      <div class="mt-4 grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Worker</span>
+          <select id="f-worker" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+            <option value="">— Select worker —</option>
+          </select>
+        </label>
+
+        <fieldset>
+          <legend class="text-sm font-medium text-gray-700">Pay-out method</legend>
+          <div class="mt-2 flex flex-wrap gap-2">
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 bg-white px-3 py-2 text-sm">
+              <input type="radio" name="payment_method" value="cash" /> Cash
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 bg-white px-3 py-2 text-sm">
+              <input type="radio" name="payment_method" value="bank_transfer" /> Bank
+            </label>
+            <label class="inline-flex items-center gap-2 rounded-md border-2 border-gray-300 bg-white px-3 py-2 text-sm">
+              <input type="radio" name="payment_method" value="cheque" /> Cheque
+            </label>
+          </div>
+        </fieldset>
+
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Covers period — start</span>
+          <input id="f-period-start" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Covers period — end</span>
+          <input id="f-period-end" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+      </div>
+    </section>
+
+    <!-- VENDOR & DESCRIPTION (hidden for staff payments) -->
+    <section id="general-section" class="rounded-lg border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 sm:grid-cols-2">
+        <label class="block">
+          <span class="block text-sm font-medium text-gray-700">Vendor</span>
+          <input id="f-vendor" type="text" maxlength="120" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+        </label>
+        <label class="block sm:col-span-2">
+          <span class="block text-sm font-medium text-gray-700">Description</span>
+          <textarea id="f-description" rows="2" maxlength="500" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none"></textarea>
+        </label>
+      </div>
+
+      <div class="mt-5">
+        <span class="block text-sm font-medium text-gray-700">Receipt photo</span>
+        <div class="mt-2 rounded-md border-2 border-dashed border-gray-300 bg-gray-50 p-4">
+          <input
+            id="f-receipt"
+            type="file"
+            accept="image/*"
+            capture="environment"
+            class="block w-full text-sm text-gray-700 file:me-3 file:rounded-md file:border-0 file:bg-[#19576d] file:px-4 file:py-2 file:text-sm file:font-semibold file:text-white hover:file:bg-[#134559]"
+          />
+          <p id="receipt-status" class="mt-2 hidden text-xs"></p>
+          <div id="receipt-preview-wrap" class="mt-3 hidden">
+            <img id="receipt-preview" alt="Receipt preview" class="max-h-48 rounded-md border border-gray-200" />
+            <button id="receipt-clear" type="button" class="mt-2 text-xs text-red-700 hover:underline">Remove</button>
+          </div>
+        </div>
+      </div>
+
+      {vatEnabled ? (
+        <div class="mt-5 rounded-md border border-emerald-200 bg-emerald-50 p-4">
+          <div class="flex items-center justify-between gap-3">
+            <p class="text-sm font-medium text-emerald-900">VAT ({vatRate}%) — auto-calculated</p>
+            <p id="vat-net-display" class="text-xs text-emerald-800"></p>
+          </div>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <label class="block">
+              <span class="block text-xs font-medium text-gray-600">VAT amount (£)</span>
+              <input id="f-vat-amount" type="number" step="0.01" min="0" inputmode="decimal" class="mt-1 w-full rounded-md border-2 border-gray-300 bg-white px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            </label>
+            <label class="block">
+              <span class="block text-xs font-medium text-gray-600">VAT rate (%)</span>
+              <input id="f-vat-rate" type="number" step="1" min="0" max="100" inputmode="numeric" class="mt-1 w-full rounded-md border-2 border-gray-300 bg-white px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            </label>
+          </div>
+          <p class="mt-2 text-xs text-emerald-800">
+            UK VAT is included in the gross amount above. Net = amount − VAT. Override if the receipt shows a different split.
+          </p>
+        </div>
+      ) : (
+        <details class="mt-4">
+          <summary class="cursor-pointer text-sm font-medium text-gray-700">VAT (optional)</summary>
+          <div class="mt-3 grid gap-3 sm:grid-cols-2">
+            <label class="block">
+              <span class="block text-xs font-medium text-gray-600">VAT amount (£)</span>
+              <input id="f-vat-amount" type="number" step="0.01" min="0" inputmode="decimal" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            </label>
+            <label class="block">
+              <span class="block text-xs font-medium text-gray-600">VAT rate (%)</span>
+              <input id="f-vat-rate" type="number" step="1" min="0" max="100" inputmode="numeric" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            </label>
+          </div>
+        </details>
+      )}
+    </section>
+
+    <div class="flex items-center justify-end gap-3">
+      <a href="/app/expenses" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</a>
+      <button id="submit" type="submit" class="rounded-md bg-[#19576d] px-6 py-3 text-base font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+    </div>
+  </form>
+
+  <script is:inline src="/scripts/image-compress.js"></script>
+  <script is:inline define:vars={{ vatEnabled, vatRate }}>
+    (function () {
+      var form = document.getElementById('expense-form');
+      var status = document.getElementById('status-bar');
+      var submit = document.getElementById('submit');
+
+      var fDate = document.getElementById('f-date');
+      var fAmount = document.getElementById('f-amount');
+      var fVendor = document.getElementById('f-vendor');
+      var fDesc = document.getElementById('f-description');
+      var fVatAmt = document.getElementById('f-vat-amount');
+      var fVatRate = document.getElementById('f-vat-rate');
+      var fWorker = document.getElementById('f-worker');
+      var fPeriodStart = document.getElementById('f-period-start');
+      var fPeriodEnd = document.getElementById('f-period-end');
+      var fReceipt = document.getElementById('f-receipt');
+      var receiptStatus = document.getElementById('receipt-status');
+      var receiptPreviewWrap = document.getElementById('receipt-preview-wrap');
+      var receiptPreview = document.getElementById('receipt-preview');
+      var receiptClear = document.getElementById('receipt-clear');
+
+      var staffSection = document.getElementById('staff-section');
+      var generalSection = document.getElementById('general-section');
+      var vatNetDisplay = document.getElementById('vat-net-display');
+
+      var receiptKey = null; // R2 key after successful upload
+      var receiptObjectUrl = null; // for blob: preview cleanup
+      var vatManuallyEdited = false; // suppress auto-calc once the user types in the VAT box
+
+      function poundsToPence(value) {
+        if (value === '' || value === null || value === undefined) return 0;
+        var n = Number(value);
+        if (!isFinite(n)) return 0;
+        return Math.round(n * 100);
+      }
+
+      function fmtMoney(pence) {
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function recalcVat() {
+        if (!vatEnabled) return;
+        var grossPence = poundsToPence(fAmount.value);
+        var rate = Number(fVatRate.value);
+        if (!isFinite(rate) || rate <= 0) rate = vatRate;
+        var vatPence = 0;
+        if (grossPence > 0 && rate > 0) {
+          vatPence = Math.round((grossPence * rate) / (100 + rate));
+        }
+        if (!vatManuallyEdited) {
+          fVatAmt.value = vatPence > 0 ? (vatPence / 100).toFixed(2) : '';
+        }
+        if (vatNetDisplay) {
+          if (grossPence > 0) {
+            var actualVat = vatManuallyEdited ? poundsToPence(fVatAmt.value) : vatPence;
+            vatNetDisplay.textContent = 'Net ' + fmtMoney(grossPence - actualVat);
+          } else {
+            vatNetDisplay.textContent = '';
+          }
+        }
+      }
+
+      function todayUk() {
+        return new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London',
+          year: 'numeric', month: '2-digit', day: '2-digit',
+        }).format(new Date());
+      }
+
+      function showStatus(msg, kind) {
+        status.textContent = msg;
+        status.className = 'mt-3 rounded-md p-3 text-sm ';
+        if (kind === 'error') status.className += 'border border-red-300 bg-red-50 text-red-800';
+        else if (kind === 'success') status.className += 'border border-green-300 bg-green-50 text-green-800';
+        else status.className += 'border border-gray-300 bg-gray-50 text-gray-700';
+      }
+      function clearStatus() { status.className = 'mt-3 hidden rounded-md p-3 text-sm'; }
+
+      function selectedRadio(name) {
+        var el = form.querySelector('input[name="' + name + '"]:checked');
+        return el ? el.value : '';
+      }
+
+      function onCategoryChange() {
+        var cat = selectedRadio('category');
+        if (cat === 'staff') {
+          staffSection.classList.remove('hidden');
+          generalSection.classList.add('hidden');
+        } else {
+          staffSection.classList.add('hidden');
+          generalSection.classList.remove('hidden');
+        }
+      }
+
+      function setReceiptStatus(msg, kind) {
+        receiptStatus.textContent = msg;
+        receiptStatus.className = 'mt-2 text-xs ';
+        if (kind === 'error') receiptStatus.className += 'text-red-700';
+        else if (kind === 'success') receiptStatus.className += 'text-green-700';
+        else receiptStatus.className += 'text-gray-600';
+        receiptStatus.classList.remove('hidden');
+      }
+
+      // Receipt OCR — best-effort. Calls the server endpoint after the
+      // receipt has been uploaded; if OCR is disabled (503), silently does
+      // nothing. If it succeeds, pre-fills any empty fields the user
+      // hasn't already touched, leaving the user free to override.
+      function tryOcr(key) {
+        if (!key) return;
+        var origStatus = receiptStatus.textContent;
+        setReceiptStatus('Reading receipt…', 'info');
+        fetch('/api/app/ocr/receipt', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify({ r2_key: key }),
+        })
+          .then(function (r) {
+            if (r.status === 503) return null; // OCR disabled — quietly drop
+            return r.json().then(function (j) { return { ok: r.ok, data: j }; });
+          })
+          .then(function (res) {
+            if (!res) {
+              setReceiptStatus(origStatus, 'success');
+              return;
+            }
+            if (!res.ok || !res.data || !res.data.extraction) {
+              setReceiptStatus('Couldn’t read receipt — please type the fields.', 'info');
+              return;
+            }
+            applyExtraction(res.data.extraction);
+            setReceiptStatus('Receipt read — review and adjust if needed.', 'success');
+          })
+          .catch(function () {
+            setReceiptStatus(origStatus, 'success');
+          });
+      }
+
+      function applyExtraction(ex) {
+        if (!ex) return;
+        if (ex.vendor && !fVendor.value) fVendor.value = ex.vendor;
+        if (ex.date && !fDate.value) fDate.value = ex.date;
+        if (typeof ex.total_pence === 'number' && ex.total_pence > 0 && !fAmount.value) {
+          fAmount.value = (ex.total_pence / 100).toFixed(2);
+        }
+        // VAT only auto-fills when the field is empty AND the vendor was
+        // VAT-registered enough that the receipt actually showed a VAT line.
+        if (typeof ex.vat_amount_pence === 'number' && ex.vat_amount_pence >= 0 && (!fVatAmt || !fVatAmt.value)) {
+          if (fVatAmt) fVatAmt.value = (ex.vat_amount_pence / 100).toFixed(2);
+          vatManuallyEdited = true; // user hasn't, but the OCR did — suppress recalc overwrite
+        }
+        if (typeof ex.vat_rate === 'number' && ex.vat_rate > 0 && fVatRate && !fVatRate.value) {
+          fVatRate.value = String(ex.vat_rate);
+        }
+        // Recalc the net display if the VAT panel is visible.
+        if (typeof recalcVat === 'function') recalcVat();
+      }
+
+      function clearReceipt() {
+        receiptKey = null;
+        if (receiptObjectUrl) {
+          URL.revokeObjectURL(receiptObjectUrl);
+          receiptObjectUrl = null;
+        }
+        receiptPreview.removeAttribute('src');
+        receiptPreviewWrap.classList.add('hidden');
+        receiptStatus.classList.add('hidden');
+        fReceipt.value = '';
+      }
+
+      receiptClear.addEventListener('click', clearReceipt);
+
+      fReceipt.addEventListener('change', async function () {
+        var file = fReceipt.files && fReceipt.files[0];
+        if (!file) return;
+        if (!window.imageCompress) {
+          setReceiptStatus('Image compression not available — reload the page.', 'error');
+          return;
+        }
+
+        setReceiptStatus('Compressing…', 'info');
+        try {
+          var result = await window.imageCompress.compressImage(file, {
+            maxWidth: 1600, maxHeight: 1600, quality: 0.85, format: 'webp',
+          });
+          var validation = window.imageCompress.validateCompression(result);
+          if (!validation.ok) {
+            setReceiptStatus(validation.reason, 'error');
+            fReceipt.value = '';
+            return;
+          }
+
+          // Show preview while uploading.
+          if (receiptObjectUrl) URL.revokeObjectURL(receiptObjectUrl);
+          receiptObjectUrl = URL.createObjectURL(result.blob);
+          receiptPreview.src = receiptObjectUrl;
+          receiptPreviewWrap.classList.remove('hidden');
+
+          var sizeKb = (result.compressedSize / 1024).toFixed(0);
+          setReceiptStatus(
+            'Uploading ' + sizeKb + 'KB (' + result.width + '×' + result.height + ')…',
+            'info',
+          );
+
+          var uploadRes = await fetch('/api/app/r2/upload?purpose=receipts', {
+            method: 'POST',
+            headers: { 'Content-Type': 'image/webp' },
+            credentials: 'same-origin',
+            body: result.blob,
+          });
+          var uploadJson = await uploadRes.json();
+          if (!uploadRes.ok) {
+            setReceiptStatus(uploadJson.error || 'Upload failed', 'error');
+            return;
+          }
+          receiptKey = uploadJson.key;
+          setReceiptStatus('Receipt attached (' + sizeKb + 'KB)', 'success');
+          tryOcr(receiptKey);
+        } catch (err) {
+          setReceiptStatus(
+            err && err.message ? err.message : 'Compression/upload failed',
+            'error',
+          );
+        }
+      });
+
+      function loadWorkers() {
+        fetch('/api/admin/staff', { credentials: 'same-origin' })
+          .then(function (r) {
+            if (r.status === 403) {
+              // Admins (non-super) can still record staff payments — but the
+              // /api/admin/staff endpoint is super_admin only via RBAC.
+              // Workaround: read the roster from /api/app/daily which is admin+.
+              return fetch('/api/app/daily?date=' + todayUk(), { credentials: 'same-origin' })
+                .then(function (r2) { return r2.json(); })
+                .then(function (d2) { return { workers: d2.workers }; });
+            }
+            if (!r.ok) throw new Error('list workers failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            (data.workers || []).forEach(function (w) {
+              var opt = document.createElement('option');
+              opt.value = w.id;
+              opt.textContent = w.name + ' (' + w.role + ')';
+              fWorker.appendChild(opt);
+            });
+          })
+          .catch(function (err) {
+            console.warn('[workers]', err);
+          });
+      }
+
+      form.addEventListener('change', onCategoryChange);
+
+      form.addEventListener('submit', function (e) {
+        e.preventDefault();
+        clearStatus();
+
+        var category = selectedRadio('category');
+        var method = selectedRadio('method');
+        if (!category || !method) {
+          showStatus('Please choose a category and payment method.', 'error');
+          return;
+        }
+        if (!fDate.value || !fAmount.value) {
+          showStatus('Date and amount are required.', 'error');
+          return;
+        }
+
+        var amount = poundsToPence(fAmount.value);
+        if (amount <= 0) {
+          showStatus('Amount must be greater than zero.', 'error');
+          return;
+        }
+
+        var body = {
+          date: fDate.value,
+          amount: amount,
+          expense_method: method,
+          category: category,
+        };
+
+        if (category === 'staff') {
+          var workerId = Number(fWorker.value);
+          var paymentMethod = selectedRadio('payment_method');
+          if (!workerId || !paymentMethod) {
+            showStatus('Worker and pay-out method are required for staff payments.', 'error');
+            return;
+          }
+          body.worker_id = workerId;
+          body.payment_method = paymentMethod;
+          body.covers_period_start = fPeriodStart.value || '';
+          body.covers_period_end = fPeriodEnd.value || '';
+          body.description = fDesc.value || '';
+        } else {
+          body.vendor = fVendor.value || '';
+          body.description = fDesc.value || '';
+          body.vat_amount = poundsToPence(fVatAmt.value);
+          body.vat_rate = Number(fVatRate.value || 0);
+          if (receiptKey) body.receipt_r2_key = receiptKey;
+        }
+
+        submit.disabled = true;
+        submit.textContent = 'Saving…';
+        fetch('/api/app/expenses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) {
+            return r.json().then(function (j) { return { ok: r.ok, data: j }; });
+          })
+          .then(function (res) {
+            if (!res.ok) {
+              showStatus(res.data.error || 'Save failed.', 'error');
+              submit.disabled = false;
+              submit.textContent = 'Save';
+              return;
+            }
+            window.location.href = '/app/expenses';
+          })
+          .catch(function (err) {
+            showStatus('Network error. ' + err.message, 'error');
+            submit.disabled = false;
+            submit.textContent = 'Save';
+          });
+      });
+
+      // VAT auto-calc wiring (no-op if business is not VAT-registered).
+      if (vatEnabled) {
+        if (fVatRate && !fVatRate.value) {
+          fVatRate.value = String(vatRate);
+        }
+        if (fAmount) fAmount.addEventListener('input', recalcVat);
+        if (fVatRate) fVatRate.addEventListener('input', recalcVat);
+        if (fVatAmt) {
+          fVatAmt.addEventListener('input', function () {
+            vatManuallyEdited = true;
+            recalcVat();
+          });
+        }
+      }
+
+      // Boot.
+      fDate.value = todayUk();
+      loadWorkers();
+      onCategoryChange();
+      recalcVat();
+    })();
+  </script>
+</AppLayout>

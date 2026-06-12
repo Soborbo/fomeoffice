@@ -1,0 +1,110 @@
+---
+import { getServiceNavItems } from '../data/services';
+import { PHONE, PHONE_DISPLAY, EMAIL, ADDRESS, LEGAL_NAME, TAGLINE, MOTTO } from '../data/site-config';
+
+const serviceLinks = getServiceNavItems();
+
+const quickLinks = [
+  { label: 'Home', href: '/' },
+  { label: 'Pay Grades', href: '/#pricing' },
+  { label: 'FAQs', href: '/#faqs' },
+  { label: 'Noticeboard', href: '/blog' },
+  { label: 'Contact HR', href: '/contact' },
+];
+---
+
+<footer class="bg-dark text-white">
+  <!-- Main Footer -->
+  <div class="container mx-auto px-4 py-16">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <!-- Logo & Description -->
+      <div>
+        <a href="/" class="flex items-center gap-3 mb-6" aria-label="Foam Office - home">
+          <img
+            src="/images/foam-office-mark.svg"
+            alt=""
+            class="h-11 w-auto"
+            loading="lazy"
+            aria-hidden="true"
+          />
+          <span class="leading-none">
+            <span class="block font-heading font-extrabold text-white text-xl tracking-tight">FOAM <span class="text-foam-mist">OFFICE</span></span>
+            <span class="block font-memo text-[10px] uppercase tracking-[0.18em] text-gray-400 mt-1">{TAGLINE}</span>
+          </span>
+        </a>
+        <p class="text-gray-400 text-sm mb-6">
+          Professional cleaning for hard-working cars in Southmead, Bristol. {MOTTO} Open 7 days a week.
+        </p>
+        <span class="stamp stamp-light text-xs">Foam Office Approved</span>
+      </div>
+
+      <!-- Contacts -->
+      <div>
+        <h3 class="text-lg font-semibold mb-6">The Front Desk</h3>
+        <ul class="space-y-4 text-gray-400 text-sm">
+          <li class="flex items-start gap-3">
+            <span class="text-accent mt-1">A:</span>
+            <span>{ADDRESS.streetShort},<br/>Bristol {ADDRESS.postcode}</span>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-accent mt-1">E:</span>
+            <div>
+              <a href={`mailto:${EMAIL}`} class="hover:text-accent transition-colors">{EMAIL}</a>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-accent mt-1">P:</span>
+            <div>
+              <a href={`tel:${PHONE}`} class="hover:text-accent transition-colors">{PHONE_DISPLAY}</a>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <span class="text-accent mt-1">H:</span>
+            <div>
+              <span>Mon-Sat: 9am-7pm</span><br/>
+              <span>Sun: 9am-5pm</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Our Departments -->
+      <div>
+        <h3 class="text-lg font-semibold mb-6">Departments</h3>
+        <ul class="space-y-3">
+          {serviceLinks.map((link) => (
+            <li>
+              <a href={`/${link.slug}/`} class="text-gray-400 text-sm hover:text-accent transition-colors">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      <!-- Quicklinks -->
+      <div>
+        <h3 class="text-lg font-semibold mb-6">Quicklinks</h3>
+        <ul class="space-y-3">
+          {quickLinks.map((link) => (
+            <li>
+              <a href={link.href} class="text-gray-400 text-sm hover:text-accent transition-colors">
+                {link.label}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Bar -->
+  <div class="border-t border-gray-700">
+    <div class="container mx-auto px-4 py-6">
+      <div class="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-gray-400">
+        <p>Copyright &copy; {new Date().getFullYear()} {LEGAL_NAME} &middot; Trading as Foam Office</p>
+        <p>Proudly cleaning cars in Southmead, Bristol</p>
+      </div>
+    </div>
+  </div>
+</footer>

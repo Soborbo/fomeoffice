@@ -1,0 +1,176 @@
+---
+export const prerender = false;
+
+import { getDb } from '../lib/db';
+import { getSessionUser, readSessionCookie } from '../lib/auth/session';
+
+// If already logged in, send straight to /admin (super_admin) or /app (admin).
+const token = readSessionCookie(Astro.request);
+if (token) {
+  try {
+    const db = getDb();
+    const user = await getSessionUser(db, token);
+    if (user) {
+      const nextParam = Astro.url.searchParams.get('next');
+      const safeNext =
+        nextParam && nextParam.startsWith('/') && !nextParam.startsWith('//') ? nextParam : null;
+      return Astro.redirect(safeNext ?? (user.role === 'super_admin' ? '/admin' : '/app'), 302);
+    }
+  } catch (err) {
+    console.error('[/login] session check failed:', err);
+  }
+}
+
+const next = Astro.url.searchParams.get('next');
+const safeNext = next && next.startsWith('/') && !next.startsWith('//') ? next : '';
+---
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="robots" content="noindex, nofollow" />
+  <title>Sign in — Bristol Car Wash CRM</title>
+  <style is:inline>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f3f4f6;
+      color: #1f2937;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 1.25rem;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 420px;
+    }
+    h1 { font-size: 1.5rem; color: #19576d; margin-bottom: 0.25rem; }
+    p.sub { color: #6b7280; font-size: 0.95rem; margin-bottom: 1.75rem; }
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #374151;
+      margin-bottom: 0.4rem;
+      margin-top: 1rem;
+    }
+    label:first-of-type { margin-top: 0; }
+    input[type="email"],
+    input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 2px solid #d1d5db;
+      border-radius: 0.6rem;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="email"]:focus,
+    input[type="password"]:focus {
+      border-color: #19576d;
+      box-shadow: 0 0 0 3px rgba(25, 87, 109, 0.15);
+    }
+    button {
+      width: 100%;
+      margin-top: 1.5rem;
+      padding: 0.85rem;
+      background: #19576d;
+      color: #fff;
+      border: none;
+      border-radius: 0.6rem;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    button:hover:not(:disabled) { background: #134559; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .error {
+      margin-top: 1rem;
+      padding: 0.7rem 0.85rem;
+      background: #fee2e2;
+      color: #991b1b;
+      border-radius: 0.5rem;
+      font-size: 0.9rem;
+      display: none;
+    }
+    .error.shown { display: block; }
+    .footer { margin-top: 1.5rem; color: #9ca3af; font-size: 0.8rem; text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Sign in</h1>
+    <p class="sub">Admin and super-admin access only. <a href="/staff/login">Staff PIN sign-in →</a></p>
+
+    <form id="login-form" novalidate>
+      <input type="hidden" name="next" value={safeNext} />
+
+      <label for="email">Email</label>
+      <input type="email" id="email" name="email" autocomplete="email" required autofocus />
+
+      <label for="password">Password</label>
+      <input type="password" id="password" name="password" autocomplete="current-password" required />
+
+      <button type="submit" id="submit">Sign in</button>
+
+      <div class="error" id="error"></div>
+    </form>
+
+    <p class="footer">Bristol Car Wash CRM</p>
+  </div>
+
+  <script is:inline>
+    var form = document.getElementById('login-form');
+    var submit = document.getElementById('submit');
+    var errorBox = document.getElementById('error');
+
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      errorBox.classList.remove('shown');
+      submit.disabled = true;
+      submit.textContent = 'Signing in';
+
+      var email = form.email.value.trim();
+      var password = form.password.value;
+      var next = form.next.value;
+
+      fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email, password: password }),
+      })
+        .then(function (res) {
+          return res.json().then(function (data) {
+            return { ok: res.ok, data: data };
+          });
+        })
+        .then(function (result) {
+          if (!result.ok) {
+            errorBox.textContent = result.data.error || 'Sign in failed.';
+            errorBox.classList.add('shown');
+            submit.disabled = false;
+            submit.textContent = 'Sign in';
+            return;
+          }
+          var role = result.data.user && result.data.user.role;
+          var target = next || (role === 'super_admin' ? '/admin' : '/app');
+          window.location.href = target;
+        })
+        .catch(function () {
+          errorBox.textContent = 'Network error. Please try again.';
+          errorBox.classList.add('shown');
+          submit.disabled = false;
+          submit.textContent = 'Sign in';
+        });
+    });
+  </script>
+</body>
+</html>

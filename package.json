@@ -1,0 +1,44 @@
+{
+  "name": "foamoffice",
+  "type": "module",
+  "version": "1.0.0",
+  "overrides": {
+    "vite": "^7"
+  },
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro build",
+    "deploy": "astro build && wrangler deploy",
+    "deploy:cron": "wrangler deploy -c wrangler-cron.json",
+    "preview": "astro preview",
+    "astro": "astro",
+    "typecheck": "astro check",
+    "db:migrate:local": "node scripts/run-migrations.mjs --local",
+    "db:migrate": "node scripts/run-migrations.mjs",
+    "db:reset:local": "node scripts/reset-local-db.mjs",
+    "db:seed:local": "wrangler d1 execute carwash-booking-db --local --file=./migrations/seed.sql",
+    "db:shell:local": "wrangler d1 execute carwash-booking-db --local --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
+    "db:shell": "wrangler d1 execute carwash-booking-db --remote --command \"SELECT name FROM sqlite_master WHERE type='table' ORDER BY name\"",
+    "db:bootstrap:local": "node scripts/seed-bootstrap.mjs",
+    "db:bootstrap": "node scripts/seed-bootstrap.mjs --remote"
+  },
+  "dependencies": {
+    "@astrojs/cloudflare": "^13.7.0",
+    "@astrojs/sitemap": "^3.7.3",
+    "@inlang/paraglide-js": "^2.19.0",
+    "@tailwindcss/vite": "^4.3.0",
+    "astro": "^6.4.6",
+    "resend": "^6.12.4",
+    "tailwindcss": "^4.3.0",
+    "three": "^0.184.0",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@astrojs/check": "^0.9.9",
+    "@cloudflare/workers-types": "^4.20260612.1",
+    "@types/node": "^25.9.3",
+    "@types/three": "^0.184.1",
+    "typescript": "^6.0.3",
+    "wrangler": "^4.100.0"
+  }
+}

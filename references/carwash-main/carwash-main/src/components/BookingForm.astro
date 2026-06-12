@@ -1,0 +1,1027 @@
+---
+const vehicleTypes = [
+  { id: 'car', label: 'Small Car', image: '/images/small-car.jpg' },
+  { id: 'suv', label: 'Van / SUV', image: '/images/suv.jpg' },
+  { id: 'van', label: 'Luton', image: '/images/luton.jpg' },
+  { id: 'caravan', label: 'Caravan', image: '/images/caravan.jpg' },
+  { id: 'motorhome', label: 'Motorhome', image: '/images/motorhome.jpg' },
+  { id: 'supercar', label: 'Supercar', image: '/images/supercar.jpg' },
+];
+
+const services = [
+  {
+    id: 'wash-wax', label: 'Wash & Wax',
+    features: ['Snow foam wash & hand dry', 'Windows inside & out', 'Tyre dressing (shine)', 'Door line cleaning'],
+    time: '~10 min',
+    price: { car: 10, suv: 15, van: 15, caravan: 0, motorhome: 0, supercar: 15 },
+  },
+  {
+    id: 'bronze', label: 'Bronze Wash',
+    features: ['Everything in Wash & Wax', 'Hoover - seats, carpets, boot'],
+    time: '~20 min',
+    price: { car: 20, suv: 25, van: 25, caravan: 0, motorhome: 0, supercar: 30 },
+  },
+  {
+    id: 'silver', label: 'Silver Wash',
+    features: ['Everything in Bronze Wash', 'All plastics cleaned & treated', 'Premium Autosmart materials'],
+    time: '~30-35 min',
+    price: { car: 25, suv: 30, van: 30, caravan: 0, motorhome: 0, supercar: 38 },
+  },
+  {
+    id: 'wash-polish', label: 'Wash & Polish',
+    features: ['Full exterior wash', 'Hand polish (cream polish)', 'Removes minor scratches', 'Restores shine - outside only'],
+    time: '~30 min wash + 1 hr polish',
+    price: { car: 40, suv: 50, van: 50, caravan: 0, motorhome: 0, supercar: 60 },
+  },
+  {
+    id: 'special', label: 'Special Offer',
+    features: ['Wash, dry & polish', 'Hoover - seats, carpets, boot', 'Windows inside & out', 'Dashboard & interior polish'],
+    price: { car: 35, suv: 45, van: 45, caravan: 0, motorhome: 0, supercar: 53 },
+    popular: true,
+  },
+  {
+    id: 'full-valet', label: 'Full Valet',
+    features: ['Full wash, interior & exterior', 'Specialist chemicals throughout', 'All surfaces treated & shiny', 'Engine clean available'],
+    time: '~5 hours',
+    price: { car: 60, suv: 70, van: 70, caravan: 0, motorhome: 0, supercar: 90 },
+    premium: true,
+  },
+  {
+    id: 'caravan-wash', label: 'Caravan Exterior Wash',
+    features: ['Snow foam wash', 'Hand wash and hand dry', 'Window cleaning', 'Wheel and tyre cleaning', 'Black streak treatment'],
+    time: '~30-45 min',
+    price: { car: 0, suv: 0, van: 0, caravan: 20, motorhome: 30, supercar: 0 },
+    caravanOnly: true,
+  },
+  {
+    id: 'caravan-machine-polish', label: 'Caravan Machine Polish',
+    features: ['Full exterior wash', 'Machine polish entire body', 'Removes oxidation and fading', 'Restores colour and shine'],
+    time: '1-2 days',
+    price: { car: 0, suv: 0, van: 0, caravan: 280, motorhome: 350, supercar: 0 },
+    caravanOnly: true,
+  },
+  {
+    id: 'caravan-interior', label: 'Caravan Interior Polish',
+    features: ['All interior surfaces cleaned', 'Dashboard and worktops polished', 'Upholstery cleaned', 'Windows inside and out'],
+    price: { car: 0, suv: 0, van: 0, caravan: 250, motorhome: 300, supercar: 0 },
+    caravanOnly: true,
+  },
+];
+---
+
+<!-- Booking Modal -->
+<div id="booking-modal" class="fixed inset-0 z-[100] hidden" role="dialog" aria-modal="true" aria-label="Book an appointment">
+  <!-- Backdrop -->
+  <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="booking-backdrop"></div>
+
+  <!-- Modal Content -->
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl relative overflow-hidden max-h-[90vh] flex flex-col">
+      <!-- Close Button -->
+      <button id="booking-close" type="button" aria-label="Close booking form" class="absolute top-4 right-4 w-10 h-10 bg-gray-100 hover:bg-gray-200 rounded-full flex items-center justify-center z-10 transition-colors">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+        </svg>
+      </button>
+
+      <!-- Progress Bar -->
+      <div class="h-1 bg-gray-100 flex-shrink-0">
+        <div id="progress-bar" class="h-full bg-primary transition-all duration-300" style="width: 16.66%"></div>
+      </div>
+
+      <!-- Scrollable Form Container -->
+      <div class="p-6 sm:p-8 overflow-y-auto flex-1">
+        <!-- Step Indicator -->
+        <div class="text-center mb-2">
+          <span id="step-indicator" class="text-sm text-gray-500">Step 1 of 6</span>
+        </div>
+
+        <!-- Steps Container -->
+        <div id="steps-container" class="relative">
+
+          <!-- Step 1: Vehicle Type -->
+          <div class="booking-step" data-step="1">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-6">
+              What type of vehicle?
+            </h3>
+            <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {vehicleTypes.map((vehicle) => (
+                <button
+                  type="button"
+                  class="vehicle-option border-2 border-gray-200 rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-center group overflow-hidden"
+                  data-vehicle={vehicle.id}
+                >
+                  <div class="w-full h-20 sm:h-24 overflow-hidden bg-gray-50">
+                    <img
+                      src={vehicle.image}
+                      alt={vehicle.label}
+                      class="w-full h-full object-contain object-center p-1"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div class="px-2 py-2.5">
+                    <span class="font-medium text-sm text-gray-900 group-hover:text-primary">{vehicle.label}</span>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <!-- Step 2: Service -->
+          <div class="booking-step hidden" data-step="2">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-4">
+              Choose your service
+            </h3>
+            <div class="space-y-3">
+              {services.map((service) => (
+                <button
+                  type="button"
+                  class={`service-option w-full border-2 rounded-xl hover:border-primary hover:bg-primary/5 transition-all text-left group ${
+                    service.popular ? 'border-accent bg-accent/5' : service.premium ? 'border-primary/30 bg-primary/5' : 'border-gray-200'
+                  }`}
+                  data-service={service.id}
+                  data-service-label={service.label}
+                  data-price-car={service.price.car}
+                  data-price-suv={service.price.suv}
+                  data-price-van={service.price.van}
+                  data-price-caravan={service.price.caravan}
+                  data-price-motorhome={service.price.motorhome}
+                  data-price-supercar={service.price.supercar}
+                  data-caravan-only={service.caravanOnly ? 'true' : 'false'}
+                >
+                  <div class="p-4">
+                    <div class="flex justify-between items-start mb-2">
+                      <div class="flex items-center gap-2">
+                        <span class="font-semibold text-gray-900 group-hover:text-primary">{service.label}</span>
+                        {service.popular && (
+                          <span class="text-[10px] font-bold uppercase bg-primary text-white px-2 py-0.5 rounded-full">Best Value</span>
+                        )}
+                        {service.premium && (
+                          <span class="text-[10px] font-bold uppercase bg-accent text-primary px-2 py-0.5 rounded-full">5-Star</span>
+                        )}
+                      </div>
+                      <span class="service-price text-primary font-bold text-lg whitespace-nowrap ml-3">{service.price.car > 0 ? `\u00A3${service.price.car}` : ''}</span>
+                    </div>
+                    <ul class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-gray-500">
+                      {service.features.map((feature) => (
+                        <li class="flex items-center gap-1">
+                          <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-primary/60 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                          </svg>
+                          {feature}
+                        </li>
+                      ))}
+                    </ul>
+                    {service.time && (
+                      <p class="text-[11px] text-gray-400 mt-1.5">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 inline-block mr-0.5 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        {service.time}
+                      </p>
+                    )}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <!-- Step 3: Name -->
+          <div class="booking-step hidden" data-step="3">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-6">
+              What's your name?
+            </h3>
+            <div class="space-y-3">
+              <input
+                type="text"
+                id="booking-firstname"
+                aria-label="First name"
+                placeholder="First name"
+                class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+                autocomplete="given-name"
+              />
+              <input
+                type="text"
+                id="booking-lastname"
+                aria-label="Last name"
+                placeholder="Last name"
+                class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+                autocomplete="family-name"
+              />
+            </div>
+            <button type="button" id="name-next" class="w-full mt-6 bg-primary text-white py-4 rounded-full font-medium hover:bg-secondary transition-colors">
+              Continue
+            </button>
+          </div>
+
+          <!-- Step 4: Email -->
+          <div class="booking-step hidden" data-step="4">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-6">
+              What's your email?
+            </h3>
+            <input
+              type="email"
+              id="booking-email"
+              aria-label="Email address"
+              placeholder="your@email.com"
+              class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+              autocomplete="email"
+            />
+            <p class="text-sm text-gray-500 mt-2 text-center">We'll send your booking confirmation here</p>
+            <button type="button" id="email-next" class="w-full mt-6 bg-primary text-white py-4 rounded-full font-medium hover:bg-secondary transition-colors">
+              Continue
+            </button>
+          </div>
+
+          <!-- Step 5: Phone -->
+          <div class="booking-step hidden" data-step="5">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-6">
+              Your phone number?
+            </h3>
+            <input
+              type="tel"
+              id="booking-phone"
+              aria-label="Phone number"
+              placeholder="07XXX XXXXXX"
+              class="w-full px-6 py-4 text-lg border-2 border-gray-200 rounded-xl focus:border-primary focus:outline-none transition-colors"
+              autocomplete="tel"
+            />
+            <p class="text-sm text-gray-500 mt-2 text-center">In case we need to reach you</p>
+            <button type="button" id="phone-next" class="w-full mt-6 bg-primary text-white py-4 rounded-full font-medium hover:bg-secondary transition-colors">
+              Continue
+            </button>
+          </div>
+
+          <!-- Step 6: Date (always-open calendar) -->
+          <div class="booking-step hidden" data-step="6">
+            <h3 class="text-2xl font-heading font-bold text-gray-900 text-center mb-4">
+              Preferred date & time?
+            </h3>
+            <p class="text-sm text-gray-500 mb-4 text-center">Mon-Sat 9am-7pm, Sun 9am-5pm</p>
+            <div class="flex justify-center">
+              <div id="calendar-container" class="w-full max-w-sm">
+                <div class="flex items-center justify-between mb-3">
+                  <button type="button" id="cal-prev" aria-label="Previous month" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" /></svg>
+                  </button>
+                  <span id="cal-month-label" class="font-semibold text-gray-900"></span>
+                  <button type="button" id="cal-next" aria-label="Next month" class="w-9 h-9 rounded-full hover:bg-gray-100 flex items-center justify-center transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-gray-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" /></svg>
+                  </button>
+                </div>
+                <div class="grid grid-cols-7 text-center text-xs font-medium text-gray-400 mb-1">
+                  <span>Mo</span><span>Tu</span><span>We</span><span>Th</span><span>Fr</span><span>Sa</span><span>Su</span>
+                </div>
+                <div id="cal-grid" class="grid grid-cols-7 gap-1 text-center"></div>
+              </div>
+            </div>
+            <input type="hidden" id="booking-date" />
+            <!-- Time Slots -->
+            <div id="time-slots-wrapper" class="hidden mt-4">
+              <p class="text-sm font-medium text-gray-700 text-center mb-2">Preferred time</p>
+              <div class="flex justify-center">
+                <div id="time-slots-grid" class="grid grid-cols-4 sm:grid-cols-5 gap-2 w-full max-w-sm"></div>
+              </div>
+              <p id="time-note" class="text-xs text-gray-400 text-center mt-2 hidden"></p>
+            </div>
+            <input type="hidden" id="booking-time" />
+            <button type="button" id="submit-booking" class="w-full mt-5 bg-primary text-white py-4 rounded-full font-medium hover:bg-secondary transition-colors flex items-center justify-center gap-2">
+              <span>Request Appointment</span>
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+              </svg>
+            </button>
+          </div>
+
+          <!-- Loading State -->
+          <div class="booking-step hidden" data-step="loading">
+            <div class="text-center py-12">
+              <div class="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-6"></div>
+              <p class="text-gray-600">Sending your request...</p>
+            </div>
+          </div>
+
+          <!-- Success State -->
+          <div class="booking-step hidden" data-step="success">
+            <div class="text-center py-8">
+              <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Booking Confirmed!</h3>
+              <p class="text-gray-600 mb-6">Your appointment is confirmed. We've sent the details to your email.</p>
+
+              <!-- Confirmed Notice -->
+              <div class="bg-green-50 border-2 border-green-200 rounded-xl p-4 mb-6">
+                <div class="flex items-start gap-3">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-green-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <div class="text-left">
+                    <p class="font-semibold text-green-800">Just turn up at your chosen time</p>
+                    <p class="text-sm text-green-700 mt-1">No need to call — we're expecting you. If you need to change anything, call us on 07 977 889747.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Optional Stripe payment block. Hidden by default; revealed
+                   only when GET /api/stripe/public-key returns 200. -->
+              <div id="booking-pay-block" class="hidden mt-2 mb-6 rounded-xl border-2 border-blue-200 bg-blue-50 p-4 text-left">
+                <p class="font-semibold text-blue-900">
+                  Pay now <span id="booking-pay-amount" class="ms-1"></span>
+                  <span class="text-xs font-normal text-blue-700">(optional, fast-track on arrival)</span>
+                </p>
+                <p class="mt-1 text-sm text-blue-800">Or pay on arrival — your booking is confirmed either way.</p>
+
+                <button type="button" id="booking-pay-start" class="mt-3 inline-flex items-center gap-2 rounded-md bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-700">
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M5 6h14a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" /></svg>
+                  Pay by card
+                </button>
+
+                <div id="booking-pay-elements" class="hidden mt-4">
+                  <div id="booking-stripe-element" class="rounded-md border border-gray-200 bg-white p-3"></div>
+                  <p id="booking-pay-error" class="mt-2 hidden text-sm text-red-700"></p>
+                  <button type="button" id="booking-pay-confirm" class="mt-3 w-full rounded-md bg-blue-600 px-4 py-2 font-semibold text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60">
+                    Confirm payment
+                  </button>
+                </div>
+
+                <p id="booking-pay-success" class="hidden mt-3 text-sm font-semibold text-green-700">✓ Paid — see you on the day!</p>
+              </div>
+
+              <button type="button" id="booking-done" class="bg-primary text-white px-8 py-3 rounded-full font-medium hover:bg-secondary transition-colors">
+                Got it!
+              </button>
+            </div>
+          </div>
+
+          <!-- Error State -->
+          <div class="booking-step hidden" data-step="error">
+            <div class="text-center py-8">
+              <div class="w-20 h-20 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </div>
+              <h3 class="text-2xl font-heading font-bold text-gray-900 mb-4">Something went wrong</h3>
+              <p class="text-gray-600 mb-6">Please try again or call us directly at <a href="tel:07977889747" class="text-primary font-medium">07 977 889747</a></p>
+              <button type="button" id="booking-retry" class="bg-primary text-white px-8 py-3 rounded-full font-medium hover:bg-secondary transition-colors">
+                Try Again
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- Back Button -->
+        <button type="button" id="booking-back" class="hidden mt-4 text-gray-500 hover:text-gray-700 text-sm flex items-center gap-1 mx-auto">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+          </svg>
+          Back
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Booking Form Logic
+  const modal = document.getElementById('booking-modal');
+  const backdrop = document.getElementById('booking-backdrop');
+  const closeBtn = document.getElementById('booking-close');
+  const backBtn = document.getElementById('booking-back');
+  const progressBar = document.getElementById('progress-bar');
+  const stepIndicator = document.getElementById('step-indicator');
+  const steps = document.querySelectorAll('.booking-step');
+
+  let currentStep = 1;
+  const totalSteps = 6;
+
+  // Capture ad tracking params from URL on page load
+  const urlParams = new URLSearchParams(window.location.search);
+
+  // Form data
+  const formData: Record<string, string> = {
+    vehicle: '',
+    vehicleLabel: '',
+    service: '',
+    serviceLabel: '',
+    price: '',
+    firstName: '',
+    lastName: '',
+    name: '',
+    email: '',
+    phone: '',
+    date: '',
+    time: '',
+    gclid: urlParams.get('gclid') || '',
+    fbclid: urlParams.get('fbclid') || '',
+    utmSource: urlParams.get('utm_source') || '',
+    utmMedium: urlParams.get('utm_medium') || '',
+    utmCampaign: urlParams.get('utm_campaign') || '',
+    utmTerm: urlParams.get('utm_term') || '',
+    utmContent: urlParams.get('utm_content') || '',
+  };
+
+  // ======== CALENDAR ========
+  let calYear = new Date().getFullYear();
+  let calMonth = new Date().getMonth();
+  let selectedDate = '';
+  let selectedTime = '';
+
+  const calGrid = document.getElementById('cal-grid');
+  const calLabel = document.getElementById('cal-month-label');
+  const calPrev = document.getElementById('cal-prev');
+  const calNext = document.getElementById('cal-next');
+
+  function renderCalendar() {
+    if (!calGrid || !calLabel) return;
+
+    const today = new Date();
+    today.setHours(0,0,0,0);
+    const monthNames = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    calLabel.textContent = `${monthNames[calMonth]} ${calYear}`;
+
+    calGrid.innerHTML = '';
+
+    // First day of month (0=Sun, convert so Mon=0)
+    const firstDay = new Date(calYear, calMonth, 1).getDay();
+    const startOffset = (firstDay === 0 ? 6 : firstDay - 1);
+
+    // Days in month
+    const daysInMonth = new Date(calYear, calMonth + 1, 0).getDate();
+
+    // Empty cells for offset
+    for (let i = 0; i < startOffset; i++) {
+      const empty = document.createElement('div');
+      calGrid.appendChild(empty);
+    }
+
+    for (let d = 1; d <= daysInMonth; d++) {
+      const cellDate = new Date(calYear, calMonth, d);
+      const dateStr = `${calYear}-${String(calMonth + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+      const isPast = cellDate < today;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = String(d);
+      btn.dataset.date = dateStr;
+
+      const isToday = cellDate.getTime() === today.getTime();
+      const isSelected = dateStr === selectedDate;
+
+      let cls = 'w-9 h-9 rounded-full text-sm flex items-center justify-center mx-auto transition-colors ';
+      if (isPast) {
+        cls += 'text-gray-300 cursor-not-allowed';
+      } else if (isSelected) {
+        cls += 'bg-primary text-white font-bold';
+      } else if (isToday) {
+        cls += 'border-2 border-primary text-primary font-semibold hover:bg-primary/10 cursor-pointer';
+      } else {
+        cls += 'text-gray-700 hover:bg-primary/10 cursor-pointer';
+      }
+      btn.className = cls;
+
+      if (!isPast) {
+        btn.addEventListener('click', () => {
+          selectedDate = dateStr;
+          selectedTime = '';
+          (document.getElementById('booking-date') as HTMLInputElement).value = dateStr;
+          (document.getElementById('booking-time') as HTMLInputElement).value = '';
+          renderCalendar();
+          renderTimeSlots();
+        });
+      }
+
+      calGrid.appendChild(btn);
+    }
+  }
+
+  // ======== TIME SLOTS ========
+  function renderTimeSlots() {
+    const wrapper = document.getElementById('time-slots-wrapper');
+    const grid = document.getElementById('time-slots-grid');
+    const note = document.getElementById('time-note');
+    if (!wrapper || !grid || !note) return;
+
+    if (!selectedDate) {
+      wrapper.classList.add('hidden');
+      return;
+    }
+
+    const date = new Date(selectedDate);
+    const dayOfWeek = date.getDay(); // 0=Sun
+    const isSunday = dayOfWeek === 0;
+    const isFullValet = formData.service === 'full-valet';
+
+    let lastHour: number;
+    if (isFullValet) {
+      lastHour = 14;
+    } else if (isSunday) {
+      lastHour = 16;
+    } else {
+      lastHour = 18;
+    }
+
+    grid.innerHTML = '';
+    const lastSlotMinutes = lastHour * 60;
+
+    // If selected date is today, skip past time slots
+    const now = new Date();
+    const isToday = date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth() && date.getDate() === now.getDate();
+    const currentMinutes = isToday ? now.getHours() * 60 + now.getMinutes() : 0;
+
+    for (let m = 9 * 60; m <= lastSlotMinutes; m += 30) {
+      if (isToday && m <= currentMinutes) continue;
+
+      const hours = Math.floor(m / 60);
+      const mins = m % 60;
+      const timeStr = `${String(hours).padStart(2, '0')}:${String(mins).padStart(2, '0')}`;
+      const display = hours < 12
+        ? `${hours}:${String(mins).padStart(2, '0')}am`
+        : hours === 12
+          ? `12:${String(mins).padStart(2, '0')}pm`
+          : `${hours - 12}:${String(mins).padStart(2, '0')}pm`;
+      const isSelected = timeStr === selectedTime;
+
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.textContent = display;
+      btn.dataset.time = timeStr;
+      btn.className = `px-3 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${
+        isSelected
+          ? 'bg-primary text-white font-bold'
+          : 'bg-gray-100 text-gray-700 hover:bg-primary/10 hover:text-primary'
+      }`;
+      btn.addEventListener('click', () => {
+        selectedTime = timeStr;
+        (document.getElementById('booking-time') as HTMLInputElement).value = timeStr;
+        renderTimeSlots();
+      });
+      grid.appendChild(btn);
+    }
+
+    if (isFullValet) {
+      note.textContent = 'Full Valet: last drop-off 2pm (needs time to dry)';
+      note.classList.remove('hidden');
+    } else {
+      note.classList.add('hidden');
+    }
+
+    wrapper.classList.remove('hidden');
+  }
+
+  calPrev?.addEventListener('click', () => {
+    calMonth--;
+    if (calMonth < 0) { calMonth = 11; calYear--; }
+    // Don't go before current month
+    const now = new Date();
+    if (calYear < now.getFullYear() || (calYear === now.getFullYear() && calMonth < now.getMonth())) {
+      calMonth = now.getMonth();
+      calYear = now.getFullYear();
+    }
+    renderCalendar();
+  });
+
+  calNext?.addEventListener('click', () => {
+    calMonth++;
+    if (calMonth > 11) { calMonth = 0; calYear++; }
+    renderCalendar();
+  });
+
+  // ======== MODAL ========
+
+  // Open modal
+  function openBookingModal() {
+    modal?.classList.remove('hidden');
+    document.body.style.overflow = 'hidden';
+    currentStep = 1;
+    selectedDate = '';
+    selectedTime = '';
+    calYear = new Date().getFullYear();
+    calMonth = new Date().getMonth();
+    updateStep();
+  }
+
+  // Close modal
+  function closeBookingModal() {
+    modal?.classList.add('hidden');
+    document.body.style.overflow = '';
+    currentStep = 1;
+    selectedDate = '';
+    selectedTime = '';
+    Object.keys(formData).forEach(key => formData[key] = '');
+    document.querySelectorAll('.vehicle-option, .service-option').forEach(el => {
+      el.classList.remove('border-primary', 'bg-primary/10');
+    });
+    const fnInput = document.getElementById('booking-firstname') as HTMLInputElement;
+    const lnInput = document.getElementById('booking-lastname') as HTMLInputElement;
+    const emInput = document.getElementById('booking-email') as HTMLInputElement;
+    const phInput = document.getElementById('booking-phone') as HTMLInputElement;
+    if (fnInput) fnInput.value = '';
+    if (lnInput) lnInput.value = '';
+    if (emInput) emInput.value = '';
+    if (phInput) phInput.value = '';
+    updateStep();
+  }
+
+  // Update visible step
+  function updateStep() {
+    steps.forEach(step => {
+      const stepNum = step.getAttribute('data-step');
+      if (stepNum === currentStep.toString() || stepNum === 'loading' || stepNum === 'success' || stepNum === 'error') {
+        step.classList.toggle('hidden', stepNum !== currentStep.toString());
+      } else {
+        step.classList.add('hidden');
+      }
+    });
+
+    // Update progress
+    const progress = (currentStep / totalSteps) * 100;
+    if (progressBar) progressBar.style.width = `${Math.min(progress, 100)}%`;
+    if (stepIndicator) stepIndicator.textContent = `Step ${currentStep} of ${totalSteps}`;
+
+    // Show/hide back button
+    if (backBtn) {
+      backBtn.classList.toggle('hidden', currentStep <= 1);
+    }
+
+    // Update service prices and visibility based on vehicle type
+    if (currentStep === 2 && formData.vehicle) {
+      const isCaravanType = formData.vehicle === 'caravan' || formData.vehicle === 'motorhome';
+      document.querySelectorAll('.service-option').forEach(el => {
+        const htmlEl = el as HTMLElement;
+        const priceEl = el.querySelector('.service-price');
+        const price = el.getAttribute(`data-price-${formData.vehicle}`);
+        const isCaravanOnly = el.getAttribute('data-caravan-only') === 'true';
+
+        if (isCaravanOnly && !isCaravanType) {
+          htmlEl.style.display = 'none';
+        } else if (!isCaravanOnly && isCaravanType) {
+          htmlEl.style.display = 'none';
+        } else {
+          htmlEl.style.display = '';
+          if (priceEl && price && price !== '0') priceEl.textContent = `\u00A3${price}`;
+        }
+      });
+    }
+
+    // Render calendar and time slots when reaching step 6
+    if (currentStep === 6) {
+      renderCalendar();
+      renderTimeSlots();
+    }
+  }
+
+  function showStep(step: string) {
+    steps.forEach(s => s.classList.add('hidden'));
+    const targetStep = document.querySelector(`.booking-step[data-step="${step}"]`);
+    if (targetStep) targetStep.classList.remove('hidden');
+  }
+
+  function nextStep() {
+    if (currentStep < totalSteps) {
+      currentStep++;
+      updateStep();
+    }
+  }
+
+  function prevStep() {
+    if (currentStep > 1) {
+      currentStep--;
+      updateStep();
+    }
+  }
+
+  // Event Listeners
+  backdrop?.addEventListener('click', closeBookingModal);
+  closeBtn?.addEventListener('click', closeBookingModal);
+  backBtn?.addEventListener('click', prevStep);
+
+  // Vehicle selection
+  document.querySelectorAll('.vehicle-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.vehicle-option').forEach(el => {
+        el.classList.remove('border-primary', 'bg-primary/10');
+      });
+      btn.classList.add('border-primary', 'bg-primary/10');
+      formData.vehicle = btn.getAttribute('data-vehicle') || '';
+      formData.vehicleLabel = btn.querySelector('span')?.textContent || btn.querySelector('div:last-child span')?.textContent || '';
+      setTimeout(nextStep, 200);
+    });
+  });
+
+  // Service selection
+  document.querySelectorAll('.service-option').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.service-option').forEach(el => {
+        el.classList.remove('border-primary', 'bg-primary/10');
+      });
+      btn.classList.add('border-primary', 'bg-primary/10');
+      formData.service = btn.getAttribute('data-service') || '';
+      formData.serviceLabel = btn.getAttribute('data-service-label') || '';
+      formData.price = btn.querySelector('.service-price')?.textContent || '';
+      setTimeout(nextStep, 200);
+    });
+  });
+
+  // Name input (first + last on same step)
+  document.getElementById('name-next')?.addEventListener('click', () => {
+    const fnInput = document.getElementById('booking-firstname') as HTMLInputElement;
+    const lnInput = document.getElementById('booking-lastname') as HTMLInputElement;
+    if (!fnInput.value.trim()) {
+      fnInput.focus();
+      fnInput.classList.add('border-red-400');
+      setTimeout(() => fnInput.classList.remove('border-red-400'), 1000);
+      return;
+    }
+    if (!lnInput.value.trim()) {
+      lnInput.focus();
+      lnInput.classList.add('border-red-400');
+      setTimeout(() => lnInput.classList.remove('border-red-400'), 1000);
+      return;
+    }
+    formData.firstName = fnInput.value.trim();
+    formData.lastName = lnInput.value.trim();
+    formData.name = `${formData.firstName} ${formData.lastName}`;
+    nextStep();
+  });
+
+  // Email input
+  document.getElementById('email-next')?.addEventListener('click', () => {
+    const input = document.getElementById('booking-email') as HTMLInputElement;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (emailRegex.test(input.value.trim())) {
+      formData.email = input.value.trim();
+      nextStep();
+    } else {
+      input.focus();
+      input.classList.add('border-red-400');
+      setTimeout(() => input.classList.remove('border-red-400'), 1000);
+    }
+  });
+
+  // Phone input
+  document.getElementById('phone-next')?.addEventListener('click', () => {
+    const input = document.getElementById('booking-phone') as HTMLInputElement;
+    if (input.value.trim().length >= 10) {
+      formData.phone = input.value.trim();
+      nextStep();
+    } else {
+      input.focus();
+      input.classList.add('border-red-400');
+      setTimeout(() => input.classList.remove('border-red-400'), 1000);
+    }
+  });
+
+  // Submit booking
+  document.getElementById('submit-booking')?.addEventListener('click', async () => {
+    const dateInput = document.getElementById('booking-date') as HTMLInputElement;
+    const timeInput = document.getElementById('booking-time') as HTMLInputElement;
+    if (!dateInput.value || !selectedDate) {
+      const calContainer = document.getElementById('calendar-container');
+      calContainer?.classList.add('ring-2', 'ring-red-400', 'rounded-xl');
+      setTimeout(() => calContainer?.classList.remove('ring-2', 'ring-red-400', 'rounded-xl'), 1500);
+      return;
+    }
+    if (!timeInput.value || !selectedTime) {
+      const wrapper = document.getElementById('time-slots-wrapper');
+      wrapper?.classList.add('ring-2', 'ring-red-400', 'rounded-xl');
+      setTimeout(() => wrapper?.classList.remove('ring-2', 'ring-red-400', 'rounded-xl'), 1500);
+      return;
+    }
+    formData.date = dateInput.value;
+    formData.time = timeInput.value;
+
+    showStep('loading');
+
+    try {
+      const response = await fetch('/api/booking', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData)
+      });
+
+      if (response.ok) {
+        const data = await response.json().catch(() => ({}));
+        const bookingId = (data && (data as any).bookingId) || null;
+        const pricePence = parsePricePence(formData.price);
+        showStep('success');
+        // Defer the Stripe init by a tick so the success step is visible
+        // even if /api/stripe/public-key is slow.
+        setTimeout(() => {
+          (window as any).__carwashBookingStripeInit?.({
+            bookingId,
+            pricePence,
+            customerEmail: formData.email,
+          });
+        }, 0);
+      } else {
+        showStep('error');
+      }
+    } catch (error) {
+      showStep('error');
+    }
+  });
+
+  function parsePricePence(price: string): number {
+    if (!price) return 0;
+    const match = price.replace(/[^\d.]/g, '');
+    if (!match) return 0;
+    const n = Number(match);
+    if (!Number.isFinite(n) || n <= 0) return 0;
+    return Math.round(n * 100);
+  }
+
+  // Done button
+  document.getElementById('booking-done')?.addEventListener('click', closeBookingModal);
+
+  // Retry button
+  document.getElementById('booking-retry')?.addEventListener('click', () => {
+    currentStep = 1;
+    updateStep();
+  });
+
+  // Enter key navigation
+  // First name → focus last name on Enter
+  document.getElementById('booking-firstname')?.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('booking-lastname')?.focus();
+    }
+  });
+  // Last name → submit name step on Enter
+  document.getElementById('booking-lastname')?.addEventListener('keydown', (e) => {
+    if ((e as KeyboardEvent).key === 'Enter') {
+      e.preventDefault();
+      document.getElementById('name-next')?.click();
+    }
+  });
+  ['booking-email', 'booking-phone'].forEach(id => {
+    document.getElementById(id)?.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter') {
+        e.preventDefault();
+        const btnId = id.replace('booking-', '') + '-next';
+        document.getElementById(btnId)?.click();
+      }
+    });
+  });
+
+  // Escape key closes modal
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && !modal?.classList.contains('hidden')) {
+      closeBookingModal();
+    }
+  });
+
+  // Expose openBookingModal globally
+  (window as any).openBookingModal = openBookingModal;
+</script>
+
+<!--
+  Optional Stripe payment integration on the success step.
+  Self-contained: feature-flagged via /api/stripe/public-key so when Stripe
+  isn't enabled the script is a no-op and the Pay block stays hidden.
+-->
+<script is:inline>
+  (function () {
+    var publicKey = null;       // populated lazily on first init call
+    var testMode = false;
+    var stripe = null;
+    var elements = null;
+    var paymentElement = null;
+    var clientSecret = null;
+    var stripeLoadingPromise = null;
+
+    function loadStripeScript() {
+      if (stripeLoadingPromise) return stripeLoadingPromise;
+      stripeLoadingPromise = new Promise(function (resolve, reject) {
+        if (window.Stripe) return resolve();
+        var s = document.createElement('script');
+        s.src = 'https://js.stripe.com/v3/';
+        s.async = true;
+        s.onload = function () { resolve(); };
+        s.onerror = function () { reject(new Error('Failed to load Stripe.js')); };
+        document.head.appendChild(s);
+      });
+      return stripeLoadingPromise;
+    }
+
+    function fmtPounds(pence) {
+      var pounds = Math.floor(pence / 100);
+      var pennies = pence % 100;
+      return '£' + pounds + (pennies > 0 ? ('.' + (pennies < 10 ? '0' + pennies : pennies)) : '');
+    }
+
+    function setError(msg) {
+      var el = document.getElementById('booking-pay-error');
+      if (!el) return;
+      if (msg) {
+        el.textContent = msg;
+        el.classList.remove('hidden');
+      } else {
+        el.classList.add('hidden');
+      }
+    }
+
+    // Called from the booking submit handler after /api/booking succeeds.
+    window.__carwashBookingStripeInit = async function (input) {
+      var bookingId = input && input.bookingId;
+      var pricePence = input && input.pricePence;
+      var customerEmail = input && input.customerEmail;
+      if (!bookingId || !pricePence || pricePence <= 0) return;
+
+      // First call resolves the public key. On 503 (stripe disabled) just exit.
+      if (!publicKey) {
+        try {
+          var res = await fetch('/api/stripe/public-key', { credentials: 'omit' });
+          if (!res.ok) return;
+          var data = await res.json();
+          if (!data || !data.enabled || !data.publicKey) return;
+          publicKey = data.publicKey;
+          testMode = !!data.testMode;
+        } catch (err) {
+          return;
+        }
+      }
+
+      var block = document.getElementById('booking-pay-block');
+      var amount = document.getElementById('booking-pay-amount');
+      var startBtn = document.getElementById('booking-pay-start');
+      var elementsWrap = document.getElementById('booking-pay-elements');
+      var confirmBtn = document.getElementById('booking-pay-confirm');
+      var successMsg = document.getElementById('booking-pay-success');
+      if (!block || !startBtn || !confirmBtn) return;
+
+      amount.textContent = fmtPounds(pricePence) + (testMode ? ' (test mode)' : '');
+      block.classList.remove('hidden');
+      elementsWrap.classList.add('hidden');
+      successMsg.classList.add('hidden');
+      setError(null);
+
+      startBtn.onclick = async function () {
+        startBtn.disabled = true;
+        startBtn.textContent = 'Loading…';
+        try {
+          await loadStripeScript();
+          var piRes = await fetch('/api/stripe/create-payment-intent', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'Origin': window.location.origin },
+            body: JSON.stringify({
+              amount_pence: pricePence,
+              booking_id: bookingId,
+              customer_email: customerEmail || '',
+            }),
+          });
+          var piJson = await piRes.json();
+          if (!piRes.ok) {
+            setError(piJson.error || 'Could not start payment.');
+            startBtn.disabled = false;
+            startBtn.textContent = 'Pay by card';
+            return;
+          }
+          clientSecret = piJson.client_secret;
+          stripe = window.Stripe(publicKey);
+          elements = stripe.elements({ clientSecret: clientSecret });
+          paymentElement = elements.create('payment', { layout: 'tabs' });
+          paymentElement.mount('#booking-stripe-element');
+
+          startBtn.classList.add('hidden');
+          elementsWrap.classList.remove('hidden');
+        } catch (err) {
+          setError(err && err.message ? err.message : 'Payment setup failed.');
+          startBtn.disabled = false;
+          startBtn.textContent = 'Pay by card';
+        }
+      };
+
+      confirmBtn.onclick = async function () {
+        if (!stripe || !elements) return;
+        confirmBtn.disabled = true;
+        confirmBtn.textContent = 'Processing…';
+        setError(null);
+        try {
+          var result = await stripe.confirmPayment({
+            elements: elements,
+            redirect: 'if_required',
+          });
+          if (result.error) {
+            setError(result.error.message || 'Payment failed.');
+            confirmBtn.disabled = false;
+            confirmBtn.textContent = 'Confirm payment';
+            return;
+          }
+          // Success — paymentIntent succeeded or requires_action handled by Stripe.
+          elementsWrap.classList.add('hidden');
+          successMsg.classList.remove('hidden');
+        } catch (err) {
+          setError(err && err.message ? err.message : 'Payment failed.');
+          confirmBtn.disabled = false;
+          confirmBtn.textContent = 'Confirm payment';
+        }
+      };
+    };
+  })();
+</script>

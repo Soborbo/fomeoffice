@@ -1,0 +1,19 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "foamoffice-cron-pinger",
+  "main": "workers/cron-pinger.mjs",
+  "compatibility_date": "2025-01-01",
+  "observability": {
+    "enabled": true,
+    "logs": {
+      "enabled": true,
+      "invocation_logs": true
+    }
+  },
+  "vars": {
+    "SITE_URL": "https://foamoffice.co.uk"
+  },
+  "triggers": {
+    "crons": ["5 19 * * *", "20 19 * * *", "0 22 * * *"]
+  }
+}

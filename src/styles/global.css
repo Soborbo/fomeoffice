@@ -1,0 +1,146 @@
+@import "tailwindcss";
+
+@theme {
+  /* Foam Office palette - corporate navy + foam blue + sticky-note yellow */
+  --color-primary: #12325C;        /* deep navy - the suit */
+  --color-secondary: #1B6FD8;      /* corporate blue - the lanyard */
+  --color-accent: #FFD84D;         /* sticky-note yellow - used sparingly */
+  --color-accent-hover: #F2C937;
+  --color-foam: #2F8BFF;           /* bright foam blue */
+  --color-foam-light: #EAF4FE;     /* foam wash background */
+  --color-foam-mist: #BFE0FA;      /* pale bubble blue */
+  --color-dark: #081D38;           /* boardroom navy (footer) */
+  --color-gray-light: #f6f8fb;
+  /* legacy alias used across CRM pages - keep mapped to brand blue */
+  --color-purple: #1B6FD8;
+
+  --font-heading: 'Archivo', 'Inter', sans-serif;
+  --font-body: 'Inter', sans-serif;
+  --font-memo: 'IBM Plex Mono', monospace;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    font-family: var(--font-body);
+    color: #243044;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: var(--font-heading);
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  /* Center headings on mobile */
+  @media (max-width: 767px) {
+    h1, h2, h3 {
+      text-align: center;
+    }
+  }
+
+  .container {
+    max-width: 1200px !important;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+@layer components {
+  /* Section eyebrow styled like an internal memo reference line */
+  .memo-label {
+    font-family: var(--font-memo);
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--color-secondary);
+  }
+
+  /* Rubber stamp - FOAM OFFICE APPROVED */
+  .stamp {
+    display: inline-block;
+    font-family: var(--font-heading);
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--color-secondary);
+    border: 3px double var(--color-secondary);
+    border-radius: 0.375rem;
+    padding: 0.35rem 0.9rem;
+    transform: rotate(-4deg);
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0.25'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.6' numOctaves='2'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 0.9 0.25'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .stamp-light {
+    color: #fff;
+    border-color: #fff;
+  }
+
+  /* Sticky note card */
+  .sticky-note {
+    background: var(--color-accent);
+    border-radius: 2px;
+    box-shadow: 0 8px 16px -6px rgba(8, 29, 56, 0.25);
+    transform: rotate(1.5deg);
+  }
+
+  /* Office ID / staff badge card */
+  .id-badge {
+    background: #fff;
+    border-radius: 0.75rem;
+    box-shadow: 0 12px 30px -10px rgba(8, 29, 56, 0.25);
+    border-top: 10px solid var(--color-secondary);
+    position: relative;
+  }
+  .id-badge::before {
+    /* lanyard hole */
+    content: '';
+    position: absolute;
+    top: -6px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 7px;
+    border-radius: 4px;
+    background: var(--color-dark);
+    opacity: 0.55;
+  }
+
+  .stat-card {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .stat-card:nth-child(2) {
+    animation-delay: 0.5s;
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes count-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .stat-card {
+    animation: none;
+  }
+}

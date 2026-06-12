@@ -1,0 +1,246 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+---
+<AppLayout title="Bookings" active="bookings">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">Bookings</h1>
+    <a
+      href="/board"
+      class="rounded-md border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-100"
+    >Open /board →</a>
+  </div>
+  <p class="mt-1 text-sm text-gray-500">
+    Every booking — pending, in progress, done, no show, cancelled. Newest first.
+  </p>
+
+  <section class="mt-5 rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
+    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">From</span>
+        <input id="f-from" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">To</span>
+        <input id="f-to" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <label class="block">
+        <span class="block text-xs font-medium text-gray-600">Status</span>
+        <select id="f-status" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+          <option value="">All</option>
+          <option value="pending">Pending</option>
+          <option value="in_progress">In progress</option>
+          <option value="done">Done</option>
+          <option value="no_show">No show</option>
+          <option value="cancelled">Cancelled</option>
+        </select>
+      </label>
+      <label class="block sm:col-span-2 lg:col-span-2">
+        <span class="block text-xs font-medium text-gray-600">Search (name, email, phone)</span>
+        <input id="f-search" type="search" placeholder="e.g. Smith or 07977…" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+      </label>
+    </div>
+    <div class="mt-3 flex items-center gap-3 text-sm text-gray-600">
+      <span id="summary" class="font-medium text-gray-700"></span>
+      <span class="text-gray-400">·</span>
+      <button id="refresh" type="button" class="rounded-md border border-gray-300 px-3 py-1 hover:bg-gray-100">Refresh</button>
+    </div>
+  </section>
+
+  <section class="mt-4 overflow-x-auto rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div id="loading" class="p-8 text-center text-gray-500">Loading…</div>
+    <div id="empty" class="hidden p-8 text-center text-gray-500">No bookings match these filters.</div>
+    <table id="table" class="hidden w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr>
+          <th class="px-3 py-2">Received</th>
+          <th class="px-3 py-2">Visit date</th>
+          <th class="px-3 py-2">Customer</th>
+          <th class="px-3 py-2">Vehicle / service</th>
+          <th class="px-3 py-2 text-right">Price</th>
+          <th class="px-3 py-2">Status</th>
+          <th class="px-3 py-2">Payment</th>
+          <th class="px-3 py-2">Source</th>
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </section>
+
+  <script is:inline>
+    (function () {
+      var fFrom = document.getElementById('f-from');
+      var fTo = document.getElementById('f-to');
+      var fStatus = document.getElementById('f-status');
+      var fSearch = document.getElementById('f-search');
+      var refreshBtn = document.getElementById('refresh');
+      var loading = document.getElementById('loading');
+      var empty = document.getElementById('empty');
+      var table = document.getElementById('table');
+      var tbody = document.getElementById('rows');
+      var summary = document.getElementById('summary');
+
+      var STATUS_LABEL = {
+        pending: 'Pending',
+        in_progress: 'In progress',
+        done: 'Done',
+        no_show: 'No show',
+        cancelled: 'Cancelled',
+      };
+      var STATUS_PILL = {
+        pending: 'bg-blue-100 text-blue-800',
+        in_progress: 'bg-amber-100 text-amber-800',
+        done: 'bg-green-100 text-green-800',
+        no_show: 'bg-gray-200 text-gray-700',
+        cancelled: 'bg-red-100 text-red-800',
+      };
+
+      function fmtMoney(p) {
+        var sign = p < 0 ? '-' : '';
+        var abs = Math.abs(p);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function fmtDateTime(iso) {
+        if (!iso) return '';
+        var s = iso.indexOf('T') >= 0 ? iso : iso.replace(' ', 'T');
+        if (!/[Zz]|[+-]\d{2}:?\d{2}$/.test(s)) s += 'Z';
+        var d = new Date(s);
+        if (isNaN(d.getTime())) return iso;
+        return d.toLocaleString('en-GB', {
+          day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+          timeZone: 'Europe/London',
+        });
+      }
+
+      function fmtVisitDate(d, t) {
+        if (!d) return '';
+        var parts = d.split('-');
+        if (parts.length !== 3) return d;
+        var human = parts[2] + '/' + parts[1] + '/' + parts[0];
+        return t ? human + ' · ' + t : human;
+      }
+
+      function td(text, cls) {
+        var el = document.createElement('td');
+        el.className = 'px-3 py-2 ' + (cls || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      function debounce(fn, ms) {
+        var t;
+        return function () {
+          clearTimeout(t);
+          var args = arguments, self = this;
+          t = setTimeout(function () { fn.apply(self, args); }, ms);
+        };
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        empty.classList.add('hidden');
+        table.classList.add('hidden');
+        var qs = new URLSearchParams();
+        if (fFrom.value) qs.set('from', fFrom.value);
+        if (fTo.value) qs.set('to', fTo.value);
+        if (fStatus.value) qs.set('status', fStatus.value);
+        if (fSearch.value.trim()) qs.set('search', fSearch.value.trim());
+        fetch('/api/app/bookings?' + qs.toString(), { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('list failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            tbody.innerHTML = '';
+            var items = data.items || [];
+            var pending = (data.summary.status_counts && data.summary.status_counts.pending) || 0;
+            summary.textContent =
+              items.length + ' booking' + (items.length === 1 ? '' : 's') +
+              ' · ' + pending + ' pending' +
+              ' · ' + fmtMoney(data.summary.revenue_pence) + ' done revenue';
+            if (items.length === 0) {
+              loading.classList.add('hidden');
+              empty.classList.remove('hidden');
+              return;
+            }
+            items.forEach(function (b) {
+              var tr = document.createElement('tr');
+              tr.className = 'hover:bg-gray-50';
+              tr.appendChild(td(fmtDateTime(b.created_at), 'text-gray-500 whitespace-nowrap'));
+              tr.appendChild(td(fmtVisitDate(b.date, b.time), 'whitespace-nowrap'));
+
+              var name = ((b.first_name || '') + ' ' + (b.last_name || '')).trim() || '(no name)';
+              var cust = document.createElement('td');
+              cust.className = 'px-3 py-2 text-gray-700';
+              cust.innerHTML = '';
+              var nameEl = document.createElement('div');
+              nameEl.className = 'font-semibold text-[#19576d]';
+              nameEl.textContent = name;
+              var contactEl = document.createElement('div');
+              contactEl.className = 'text-xs text-gray-500';
+              var contactBits = [];
+              if (b.email) contactBits.push(b.email);
+              if (b.phone) contactBits.push(b.phone);
+              contactEl.textContent = contactBits.join(' · ');
+              cust.appendChild(nameEl);
+              cust.appendChild(contactEl);
+              tr.appendChild(cust);
+
+              var veh = document.createElement('td');
+              veh.className = 'px-3 py-2 text-gray-700';
+              var vehTop = document.createElement('div');
+              vehTop.textContent = b.vehicle_label || '';
+              var vehBot = document.createElement('div');
+              vehBot.className = 'text-xs text-gray-500';
+              vehBot.textContent = b.service_label || '';
+              veh.appendChild(vehTop);
+              veh.appendChild(vehBot);
+              tr.appendChild(veh);
+
+              tr.appendChild(td(fmtMoney(b.price), 'text-right font-semibold whitespace-nowrap'));
+
+              var statusCell = document.createElement('td');
+              statusCell.className = 'px-3 py-2';
+              var pill = document.createElement('span');
+              pill.className = 'inline-block rounded-full px-2 py-1 text-xs font-semibold ' +
+                (STATUS_PILL[b.status] || 'bg-gray-100 text-gray-700');
+              pill.textContent = STATUS_LABEL[b.status] || b.status;
+              statusCell.appendChild(pill);
+              tr.appendChild(statusCell);
+
+              var pay = b.payment_method
+                ? (b.payment_method === 'cash' ? 'Cash' : b.payment_method === 'card' ? 'Card' : b.payment_method)
+                : '—';
+              tr.appendChild(td(pay, 'text-gray-700 whitespace-nowrap'));
+              tr.appendChild(td(b.source || '', 'text-gray-500 text-xs whitespace-nowrap'));
+
+              tbody.appendChild(tr);
+            });
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+          })
+          .catch(function (err) { loading.textContent = 'Error: ' + err.message; });
+      }
+
+      [fFrom, fTo, fStatus].forEach(function (el) { el.addEventListener('change', load); });
+      fSearch.addEventListener('input', debounce(load, 300));
+      refreshBtn.addEventListener('click', load);
+
+      // Default range: last 30 days through end of today (Europe/London).
+      var now = new Date();
+      var thirtyAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      var fmt = new Intl.DateTimeFormat('en-CA', {
+        timeZone: 'Europe/London', year: 'numeric', month: '2-digit', day: '2-digit',
+      });
+      fFrom.value = fmt.format(thirtyAgo);
+      // Empty "to" keeps future-dated bookings visible (customers can book up
+      // to whatever the form allows). Set it if you want a hard upper bound.
+
+      load();
+    })();
+  </script>
+</AppLayout>

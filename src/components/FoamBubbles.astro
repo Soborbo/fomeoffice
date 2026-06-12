@@ -1,0 +1,161 @@
+---
+// Three.js foam bubble field - decorative hero background.
+// Renders nothing visually intrusive: soft rising bubbles over the hero's navy gradient.
+// Respects prefers-reduced-motion (static frame) and pauses when the tab is hidden.
+---
+
+<canvas id="foam-bubbles" class="absolute inset-0 h-full w-full" aria-hidden="true"></canvas>
+
+<script>
+  import * as THREE from 'three';
+
+  const canvas = document.getElementById('foam-bubbles') as HTMLCanvasElement | null;
+
+  if (canvas) {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: false });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(60, 1, 0.1, 100);
+    camera.position.z = 30;
+
+    // Soft bubble sprite drawn at runtime - radial gradient with a faint rim
+    function makeBubbleTexture(): THREE.Texture {
+      const size = 128;
+      const c = document.createElement('canvas');
+      c.width = c.height = size;
+      const ctx = c.getContext('2d')!;
+      const g = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+      g.addColorStop(0, 'rgba(255,255,255,0.0)');
+      g.addColorStop(0.55, 'rgba(191,224,250,0.06)');
+      g.addColorStop(0.85, 'rgba(214,236,255,0.45)');
+      g.addColorStop(0.95, 'rgba(255,255,255,0.7)');
+      g.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = g;
+      ctx.fillRect(0, 0, size, size);
+      // specular highlight - makes it read as a bubble, not a blob
+      const h = ctx.createRadialGradient(size * 0.36, size * 0.32, 0, size * 0.36, size * 0.32, size * 0.16);
+      h.addColorStop(0, 'rgba(255,255,255,0.85)');
+      h.addColorStop(1, 'rgba(255,255,255,0)');
+      ctx.fillStyle = h;
+      ctx.fillRect(0, 0, size, size);
+      const tex = new THREE.CanvasTexture(c);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      return tex;
+    }
+
+    const texture = makeBubbleTexture();
+
+    interface Cloud {
+      points: THREE.Points;
+      base: Float32Array;
+      speeds: Float32Array;
+      phases: Float32Array;
+      count: number;
+    }
+
+    const X_SPREAD = 46;
+    const Y_SPREAD = 30;
+
+    function makeCloud(count: number, size: number, opacity: number, zRange: [number, number]): Cloud {
+      const positions = new Float32Array(count * 3);
+      const speeds = new Float32Array(count);
+      const phases = new Float32Array(count);
+      for (let i = 0; i < count; i++) {
+        positions[i * 3] = (Math.random() - 0.5) * X_SPREAD;
+        positions[i * 3 + 1] = (Math.random() - 0.5) * Y_SPREAD;
+        positions[i * 3 + 2] = zRange[0] + Math.random() * (zRange[1] - zRange[0]);
+        speeds[i] = 0.012 + Math.random() * 0.025;
+        phases[i] = Math.random() * Math.PI * 2;
+      }
+      const geometry = new THREE.BufferGeometry();
+      geometry.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
+      const material = new THREE.PointsMaterial({
+        size,
+        map: texture,
+        transparent: true,
+        opacity,
+        depthWrite: false,
+        blending: THREE.NormalBlending,
+        sizeAttenuation: true,
+      });
+      const points = new THREE.Points(geometry, material);
+      scene.add(points);
+      return { points, base: positions, speeds, phases, count };
+    }
+
+    const clouds: Cloud[] = [
+      makeCloud(45, 1.6, 0.7, [-6, 2]),   // small background bubbles
+      makeCloud(28, 3.2, 0.8, [-2, 6]),   // mid
+      makeCloud(12, 5.5, 0.9, [4, 10]),   // large foreground bubbles
+    ];
+
+    let targetX = 0;
+    let targetY = 0;
+    window.addEventListener('pointermove', (e) => {
+      targetX = (e.clientX / window.innerWidth - 0.5) * 2;
+      targetY = (e.clientY / window.innerHeight - 0.5) * 2;
+    }, { passive: true });
+
+    function resize() {
+      const parent = canvas!.parentElement;
+      if (!parent) return;
+      const w = parent.clientWidth;
+      const h = parent.clientHeight;
+      renderer.setSize(w, h, false);
+      camera.aspect = w / h;
+      camera.updateProjectionMatrix();
+    }
+    resize();
+    window.addEventListener('resize', resize, { passive: true });
+
+    const clock = new THREE.Clock();
+    let elapsed = 0;
+
+    function step(dt: number) {
+      elapsed += dt;
+      for (const cloud of clouds) {
+        const attr = cloud.points.geometry.getAttribute('position') as THREE.BufferAttribute;
+        const arr = attr.array as Float32Array;
+        for (let i = 0; i < cloud.count; i++) {
+          // rise and wrap
+          cloud.base[i * 3 + 1] += cloud.speeds[i] * dt * 60;
+          if (cloud.base[i * 3 + 1] > Y_SPREAD / 2 + 2) {
+            cloud.base[i * 3 + 1] = -Y_SPREAD / 2 - 2;
+            cloud.base[i * 3] = (Math.random() - 0.5) * X_SPREAD;
+          }
+          arr[i * 3] = cloud.base[i * 3] + Math.sin(elapsed * 0.6 + cloud.phases[i]) * 0.8;
+          arr[i * 3 + 1] = cloud.base[i * 3 + 1];
+          arr[i * 3 + 2] = cloud.base[i * 3 + 2];
+        }
+        attr.needsUpdate = true;
+      }
+      // gentle mouse parallax
+      camera.position.x += (targetX * 1.6 - camera.position.x) * 0.03;
+      camera.position.y += (-targetY * 1.0 - camera.position.y) * 0.03;
+      camera.lookAt(0, 0, 0);
+      renderer.render(scene, camera);
+    }
+
+    if (reducedMotion) {
+      step(0);
+    } else {
+      let rafId = 0;
+      const loop = () => {
+        step(Math.min(clock.getDelta(), 0.05));
+        rafId = requestAnimationFrame(loop);
+      };
+      rafId = requestAnimationFrame(loop);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          cancelAnimationFrame(rafId);
+        } else {
+          clock.getDelta(); // discard hidden time
+          rafId = requestAnimationFrame(loop);
+        }
+      });
+    }
+  }
+</script>

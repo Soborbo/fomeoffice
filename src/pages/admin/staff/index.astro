@@ -1,0 +1,297 @@
+---
+export const prerender = false;
+
+import AppLayout from '../../../layouts/AppLayout.astro';
+---
+<AppLayout title="Staff" active="staff">
+  <div class="flex flex-wrap items-center justify-between gap-3">
+    <h1 class="text-2xl font-semibold text-[#19576d]">Staff</h1>
+    <div class="flex flex-wrap items-center gap-3">
+      <a href="/admin/staff/matrix" class="text-sm font-semibold text-[#19576d] hover:underline">Attendance matrix →</a>
+      <label class="flex items-center gap-2 text-sm text-gray-700">
+        Month
+        <input id="f-month" type="month" class="rounded-md border-2 border-gray-300 px-2 py-1 focus:border-[#19576d] focus:outline-none" />
+      </label>
+      <button id="add-btn" type="button" class="rounded-md bg-[#19576d] px-4 py-2 text-sm font-semibold text-white hover:bg-[#134559]">+ Add staff</button>
+    </div>
+  </div>
+
+  <p class="mt-1 text-sm text-gray-500">
+    Earnings, paid amounts and outstanding owed for each active staff member. Click a row to view the profile.
+  </p>
+
+  <section class="mt-5 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+    <div id="loading" class="p-8 text-center text-gray-500">Loading…</div>
+    <table id="table" class="hidden w-full text-sm">
+      <thead class="bg-gray-50 text-left text-xs uppercase tracking-wide text-gray-600">
+        <tr>
+          <th class="px-3 py-2">Name</th>
+          <th class="px-3 py-2">Role</th>
+          <th class="px-3 py-2">Day rate</th>
+          <th class="px-3 py-2">Earned (month)</th>
+          <th class="px-3 py-2">Paid (month)</th>
+          <th class="px-3 py-2">Owed (lifetime)</th>
+        </tr>
+      </thead>
+      <tbody id="rows" class="divide-y divide-gray-100"></tbody>
+    </table>
+  </section>
+
+  <!-- Add-staff modal -->
+  <div id="add-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="add-title">
+    <div class="w-full max-w-lg rounded-lg bg-white shadow-xl">
+      <div class="flex items-center justify-between border-b border-gray-200 px-5 py-3">
+        <h2 id="add-title" class="text-lg font-semibold text-[#19576d]">Add a staff member</h2>
+        <button id="add-close" type="button" class="rounded p-1 text-gray-500 hover:bg-gray-100" aria-label="Close">×</button>
+      </div>
+      <form id="add-form" class="space-y-4 p-5" novalidate>
+        <div class="grid gap-3 sm:grid-cols-2">
+          <div>
+            <label for="a-name" class="block text-xs font-medium text-gray-600">Name <span class="text-red-600">*</span></label>
+            <input id="a-name" type="text" maxlength="120" aria-describedby="ae-name" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            <p id="ae-name" class="mt-1 hidden text-sm text-red-700"></p>
+          </div>
+          <div>
+            <label for="a-role" class="block text-xs font-medium text-gray-600">Role</label>
+            <select id="a-role" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none">
+              <option value="worker" selected>worker</option>
+              <option value="admin">admin</option>
+              <option value="super_admin">super_admin</option>
+            </select>
+          </div>
+          <div>
+            <label for="a-email" class="block text-xs font-medium text-gray-600">Email</label>
+            <input id="a-email" type="email" maxlength="254" aria-describedby="ae-email" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+            <p id="ae-email" class="mt-1 hidden text-sm text-red-700"></p>
+            <p class="mt-1 text-xs text-gray-500">Required for admin / super_admin (used to sign in).</p>
+          </div>
+          <div>
+            <label for="a-phone" class="block text-xs font-medium text-gray-600">Phone</label>
+            <input id="a-phone" type="tel" maxlength="40" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div>
+            <label for="a-full" class="block text-xs font-medium text-gray-600">Full-day pay (£)</label>
+            <input id="a-full" type="number" min="0" step="0.01" value="100" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div>
+            <label for="a-half" class="block text-xs font-medium text-gray-600">Half-day pay (£)</label>
+            <input id="a-half" type="number" min="0" step="0.01" value="50" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div>
+            <label for="a-hired" class="block text-xs font-medium text-gray-600">Hired at</label>
+            <input id="a-hired" type="date" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 focus:border-[#19576d] focus:outline-none" />
+          </div>
+          <div>
+            <label for="a-pin" class="block text-xs font-medium text-gray-600">PIN (4-8 digits)</label>
+            <input id="a-pin" type="text" inputmode="numeric" pattern="\d{4,8}" maxlength="8" autocomplete="off" aria-describedby="ae-pin" class="mt-1 w-full rounded-md border-2 border-gray-300 px-3 py-2 font-mono focus:border-[#19576d] focus:outline-none" />
+            <p id="ae-pin" class="mt-1 hidden text-sm text-red-700"></p>
+            <p class="mt-1 text-xs text-gray-500">Used by the worker on the /board tablet. Leave blank if not needed.</p>
+          </div>
+        </div>
+
+        <div id="add-error" class="hidden rounded-md border border-red-300 bg-red-50 p-3 text-sm text-red-800" role="alert"></div>
+
+        <div class="flex items-center justify-end gap-3 border-t border-gray-200 pt-4">
+          <button id="add-cancel" type="button" class="rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Cancel</button>
+          <button id="add-save" type="submit" class="rounded-md bg-[#19576d] px-5 py-2 text-sm font-semibold text-white hover:bg-[#134559] disabled:cursor-not-allowed disabled:opacity-50">Save</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script is:inline>
+    (function () {
+      var fMonth = document.getElementById('f-month');
+      var loading = document.getElementById('loading');
+      var table = document.getElementById('table');
+      var tbody = document.getElementById('rows');
+
+      var addBtn = document.getElementById('add-btn');
+      var addModal = document.getElementById('add-modal');
+      var addClose = document.getElementById('add-close');
+      var addCancel = document.getElementById('add-cancel');
+      var addForm = document.getElementById('add-form');
+      var addSave = document.getElementById('add-save');
+      var addError = document.getElementById('add-error');
+      var aName = document.getElementById('a-name');
+      var aRole = document.getElementById('a-role');
+      var aEmail = document.getElementById('a-email');
+      var aPhone = document.getElementById('a-phone');
+      var aFull = document.getElementById('a-full');
+      var aHalf = document.getElementById('a-half');
+      var aHired = document.getElementById('a-hired');
+      var aPin = document.getElementById('a-pin');
+      var aeName = document.getElementById('ae-name');
+      var aeEmail = document.getElementById('ae-email');
+      var aePin = document.getElementById('ae-pin');
+
+      function openAdd() {
+        addError.classList.add('hidden');
+        addError.textContent = '';
+        [aeName, aeEmail, aePin].forEach(function (n) { n.classList.add('hidden'); n.textContent = ''; });
+        addModal.classList.remove('hidden');
+        addModal.classList.add('flex');
+        aName.focus();
+      }
+      function closeAdd() {
+        addModal.classList.add('hidden');
+        addModal.classList.remove('flex');
+      }
+      addBtn.addEventListener('click', openAdd);
+      addClose.addEventListener('click', closeAdd);
+      addCancel.addEventListener('click', closeAdd);
+      addModal.addEventListener('click', function (e) {
+        if (e.target === addModal) closeAdd();
+      });
+
+      function poundsToPence(v) {
+        if (v === '' || v == null) return 0;
+        var n = Number(v);
+        if (!isFinite(n) || n < 0) return 0;
+        return Math.round(n * 100);
+      }
+
+      addForm.addEventListener('submit', function (e) {
+        e.preventDefault();
+        addError.classList.add('hidden');
+        addError.textContent = '';
+        [aeName, aeEmail, aePin].forEach(function (n) { n.classList.add('hidden'); n.textContent = ''; });
+
+        var ok = true;
+        if (!aName.value.trim()) {
+          aeName.textContent = 'Name is required.';
+          aeName.classList.remove('hidden');
+          ok = false;
+        }
+        var emailVal = aEmail.value.trim();
+        if (aRole.value !== 'worker' && !emailVal) {
+          aeEmail.textContent = 'Email is required for admin / super_admin.';
+          aeEmail.classList.remove('hidden');
+          ok = false;
+        } else if (emailVal && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailVal)) {
+          aeEmail.textContent = 'Invalid email format.';
+          aeEmail.classList.remove('hidden');
+          ok = false;
+        }
+        if (aPin.value && !/^\d{4,8}$/.test(aPin.value)) {
+          aePin.textContent = 'PIN must be 4–8 digits.';
+          aePin.classList.remove('hidden');
+          ok = false;
+        }
+        if (!ok) return;
+
+        var body = {
+          name: aName.value.trim(),
+          role: aRole.value,
+          email: emailVal || '',
+          phone: aPhone.value.trim() || '',
+          full_day_pay: poundsToPence(aFull.value),
+          half_day_pay: poundsToPence(aHalf.value),
+          hired_at: aHired.value || '',
+          pin: aPin.value || '',
+        };
+
+        addSave.disabled = true;
+        addSave.textContent = 'Saving…';
+        fetch('/api/admin/staff', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'same-origin',
+          body: JSON.stringify(body),
+        })
+          .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, data: j }; }); })
+          .then(function (res) {
+            if (!res.ok) {
+              addError.textContent = (res.data && res.data.error) || 'Save failed.';
+              addError.classList.remove('hidden');
+              addSave.disabled = false;
+              addSave.textContent = 'Save';
+              return;
+            }
+            closeAdd();
+            addSave.disabled = false;
+            addSave.textContent = 'Save';
+            // Reset and reload list.
+            addForm.reset();
+            aFull.value = '100';
+            aHalf.value = '50';
+            load();
+          })
+          .catch(function (err) {
+            addError.textContent = 'Network error. ' + err.message;
+            addError.classList.remove('hidden');
+            addSave.disabled = false;
+            addSave.textContent = 'Save';
+          });
+      });
+
+      function fmtMoney(pence) {
+        var sign = pence < 0 ? '-' : '';
+        var abs = Math.abs(pence);
+        var pounds = Math.floor(abs / 100);
+        var pennies = abs % 100;
+        if (pennies === 0) return sign + '£' + pounds;
+        return sign + '£' + pounds + '.' + (pennies < 10 ? '0' + pennies : pennies);
+      }
+
+      function currentMonth() {
+        var fmt = new Intl.DateTimeFormat('en-CA', {
+          timeZone: 'Europe/London', year: 'numeric', month: '2-digit',
+        });
+        var parts = fmt.formatToParts(new Date());
+        var y = parts.find(function (p) { return p.type === 'year'; }).value;
+        var m = parts.find(function (p) { return p.type === 'month'; }).value;
+        return y + '-' + m;
+      }
+
+      function load() {
+        loading.classList.remove('hidden');
+        loading.textContent = 'Loading…';
+        table.classList.add('hidden');
+        var qs = fMonth.value ? '?month=' + encodeURIComponent(fMonth.value) : '';
+        fetch('/api/admin/staff' + qs, { credentials: 'same-origin' })
+          .then(function (r) {
+            if (!r.ok) throw new Error('failed: ' + r.status);
+            return r.json();
+          })
+          .then(function (data) {
+            tbody.innerHTML = '';
+            (data.workers || []).forEach(function (w) {
+              var tr = document.createElement('tr');
+              tr.className = 'cursor-pointer hover:bg-gray-50';
+              tr.addEventListener('click', function () {
+                window.location.href = '/admin/staff/' + w.id;
+              });
+
+              tr.appendChild(td(w.name, 'font-medium text-[#19576d]'));
+              tr.appendChild(td(w.role));
+              tr.appendChild(td(fmtMoney(w.full_day_pay) + ' / ' + fmtMoney(w.half_day_pay), 'text-gray-500'));
+              tr.appendChild(td(fmtMoney(w.earned_this_month), 'font-semibold'));
+              tr.appendChild(td(fmtMoney(w.paid_this_month)));
+
+              var owedClass = w.owed_total > 0 ? 'font-semibold text-red-700' : 'text-gray-500';
+              tr.appendChild(td(fmtMoney(w.owed_total), owedClass));
+
+              tbody.appendChild(tr);
+            });
+            loading.classList.add('hidden');
+            table.classList.remove('hidden');
+          })
+          .catch(function (err) {
+            loading.textContent = 'Error: ' + err.message;
+          });
+      }
+
+      function td(text, extraClass) {
+        var el = document.createElement('td');
+        el.className = 'px-3 py-2 ' + (extraClass || 'text-gray-700');
+        el.textContent = text;
+        return el;
+      }
+
+      fMonth.addEventListener('change', load);
+      fMonth.value = currentMonth();
+      load();
+    })();
+  </script>
+</AppLayout>

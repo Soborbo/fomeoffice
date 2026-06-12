@@ -1,0 +1,912 @@
+---
+export const prerender = true;
+
+import Layout from '../layouts/Layout.astro';
+
+const schedule = [
+  { day: 'Monday', hours: '09.00 – 19.00' },
+  { day: 'Tuesday', hours: '09.00 – 19.00' },
+  { day: 'Wednesday', hours: '09.00 – 19.00' },
+  { day: 'Thursday', hours: '09.00 – 19.00' },
+  { day: 'Friday', hours: '09.00 – 19.00' },
+  { day: 'Saturday', hours: '09.00 – 19.00' },
+  { day: 'Sunday', hours: '09.00 – 17.00' },
+];
+
+const pricingPlans = [
+  {
+    id: 1,
+    name: 'Wash & Wax',
+    features: ['Snow foam wash & hand dry', 'Windows inside & out', 'Tyre dressing (shine)', 'Door line cleaning'],
+    time: '~10 min',
+    prices: { car: 10, suv: 15, van: 15, supercar: 15 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 2,
+    name: 'Bronze Wash',
+    features: ['Everything in Wash & Wax', 'Hoover - seats, carpets, boot'],
+    time: '~20 min',
+    prices: { car: 20, suv: 25, van: 25, supercar: 30 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 3,
+    name: 'Silver Wash',
+    features: ['Everything in Bronze Wash', 'All plastics cleaned & treated', 'Premium Autosmart materials'],
+    time: '~30-35 min',
+    prices: { car: 25, suv: 30, van: 30, supercar: 38 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 4,
+    name: 'Wash & Polish',
+    features: ['Full exterior wash', 'Hand polish (cream polish)', 'Removes minor scratches', 'Restores shine - outside only'],
+    time: '~30 min wash + 1 hr polish',
+    prices: { car: 40, suv: 50, van: 50, supercar: 60 },
+    popular: false,
+    premium: false,
+  },
+  {
+    id: 5,
+    name: 'Special Offer',
+    features: ['Wash, dry & polish', 'Hoover - seats, carpets, boot', 'Windows inside & out', 'Dashboard & interior polish'],
+    prices: { car: 35, suv: 45, van: 45, supercar: 53 },
+    popular: true,
+    premium: false,
+  },
+  {
+    id: 6,
+    name: 'Full Valet',
+    features: ['Full wash, interior & exterior', 'Specialist chemicals throughout', 'All surfaces treated & shiny', 'Engine clean available'],
+    time: '~5 hours',
+    prices: { car: 60, suv: 70, van: 70, supercar: 90 },
+    popular: false,
+    premium: true,
+  },
+];
+
+const vehicleTypes = [
+  { id: 'car', label: 'Small Car', image: '/images/small-car.jpg' },
+  { id: 'suv', label: 'Van / SUV', image: '/images/suv.jpg' },
+  { id: 'van', label: 'Luton', image: '/images/luton.jpg' },
+  // { id: 'supercar', label: 'Supercar', image: '/images/supercar.jpg' },
+];
+
+const locations = [
+  { city: 'BRISTOL', address: '290-294 Southmead Rd, BS10 5EN', weekday: 'Monday - Saturday', weekdayHours: '9:00 AM - 7:00 PM', weekend: 'Sunday', weekendHours: '9:00 AM - 5:00 PM' },
+];
+
+const testimonials = [
+  {
+    name: 'Lee Turner',
+    text: 'Brought my X5 for a full valet that we won in a charity auction. The car has never looked cleaner. I was surprised!',
+    rating: 5,
+  },
+  {
+    name: 'Katie Wilkins',
+    text: 'A brilliant, efficient 5 star service. All my family go there now. Brilliant service! The best!',
+    rating: 5,
+  },
+  {
+    name: 'Charles Russell-Smith',
+    text: 'Excellent quick service at this car wash. They take the time to do a complete clean even inside door trims and the guys are always polite and efficient.',
+    rating: 5,
+  },
+  {
+    name: 'Danielle Price',
+    text: 'Friendly staff that pay attention to detail! Would highly recommend them for a clean. Also, a waiting room for your convenience.',
+    rating: 5,
+  },
+  {
+    name: 'Natalia Mielewczyk',
+    text: "I'm beyond impressed with the level of service. From the moment I arrived, the staff was friendly, professional, and thorough.",
+    rating: 5,
+  },
+  {
+    name: 'Jawad Burhan',
+    text: 'One of the best car wash in Bristol! Indoor waiting area! Great customer service!',
+    rating: 5,
+  },
+];
+
+const blogPosts = [
+  {
+    title: 'Car Wash Services',
+    excerpt: 'Professional exterior and interior car washing services for all vehicle types.',
+    date: 'Car Wash',
+    image: '/images/Bristol-car-wash',
+    slug: 'car-wash',
+    categories: ['Service'],
+  },
+  {
+    title: 'Car Detailing',
+    excerpt: 'Complete car detailing to restore your vehicle to showroom condition.',
+    date: 'Detailing',
+    image: '/images/bristol-car-detailing',
+    slug: 'car-detailing',
+    categories: ['Service'],
+  },
+  {
+    title: 'Van Valeting',
+    excerpt: 'Specialized van valeting services for commercial and personal vehicles.',
+    date: 'Van Valet',
+    image: '/images/Bristol-Van-valeting',
+    slug: 'van-valeting',
+    categories: ['Service'],
+  },
+  {
+    title: 'Full Valet Packages',
+    excerpt: 'Comprehensive valeting packages including interior and exterior services.',
+    date: 'Full Valet',
+    image: '/images/Bristol-car-valeting-cheap',
+    slug: 'full-valet',
+    categories: ['Service'],
+  },
+];
+
+const faqs = [
+  {
+    question: 'Do I need to book in advance?',
+    answer: 'No booking required! Simply drive in during our opening hours. For larger vehicles or full valets, we recommend calling ahead to ensure minimal wait time.',
+  },
+  {
+    question: 'How long does a full valet take?',
+    answer: 'A full valet typically takes around 5 hours as the seats and interior need time to dry. We recommend dropping off your car and collecting it later. Last full valet booking is at 2pm to allow drying time before closing.',
+  },
+  {
+    question: 'Do you offer mobile valeting services?',
+    answer: 'Yes, we offer mobile valeting for vans and larger vehicles. Contact us to discuss your requirements and get a quote.',
+  },
+  {
+    question: 'What payment methods do you accept?',
+    answer: 'We accept cash, all major credit and debit cards, and contactless payments including Apple Pay and Google Pay.',
+  },
+];
+
+const teamMembers = [
+  { name: 'Our Team', role: 'Professional Staff', image: '/images/car-wash-contact', hasWebp: true },
+];
+---
+
+<Layout title="Home">
+  <!-- Hero Section -->
+  <section class="relative overflow-hidden min-h-[calc(100vh-88px)] flex items-center" style="background-color: #e5f2ff;">
+    <div class="container mx-auto px-4 py-12">
+      <div class="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+        <!-- Text Content - shows second on mobile, first on desktop -->
+        <div class="order-2 lg:order-1">
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm md:text-left">Painless Car & Van Wash Southmead, Bristol</p>
+          <h1 class="text-4xl md:text-5xl lg:text-6xl font-heading font-bold text-gray-900 leading-tight mb-6">
+            Make your car smell and feel new again
+          </h1>
+          <p class="text-gray-600 text-lg mb-8 max-w-lg md:text-left mx-auto md:mx-0">
+            Discover our proven and affordable car & van valeting service right at the corner of the Southmead Hospital, Bristol.
+          </p>
+          <!-- CTA Buttons - stacked on mobile, inline on desktop -->
+          <div class="flex flex-col sm:flex-row gap-3 mb-8">
+            <button type="button" onclick="openBookingModal()" class="bg-primary text-white px-8 py-3 rounded-full font-medium hover:bg-secondary transition-colors text-center">
+              Book Now
+            </button>
+            <a href="https://maps.google.com/?q=290-294+Southmead+Rd,+Bristol+BS10+5EN" target="_blank" rel="noopener noreferrer" class="border-2 border-primary text-primary px-8 py-3 rounded-full font-medium hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Directions
+            </a>
+          </div>
+          <!-- Testimonial -->
+          <div class="flex items-center gap-4 bg-white rounded-2xl p-4 shadow-sm">
+            <picture>
+              <source srcset="/images/bristol-car-wash-review.webp" type="image/webp" />
+              <img src="/images/car-wash-review.png" alt="Katie Wilkins - Bristol Car Van Valeting review" class="w-16 h-16 rounded-full object-cover" loading="lazy" />
+            </picture>
+            <div class="flex-1">
+              <div class="flex text-accent mb-1">
+                {[...Array(5)].map(() => (
+                  <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                  </svg>
+                ))}
+              </div>
+              <p class="text-gray-700 text-sm italic">"A brilliant, 5-star service. All my family go there now. The best!"</p>
+              <p class="text-gray-900 font-semibold text-sm mt-1">Katie Wilkins</p>
+            </div>
+          </div>
+        </div>
+        <!-- Hero Image - shows first on mobile, second on desktop -->
+        <div class="relative pb-5 order-1 lg:order-2">
+          <div class="relative z-10">
+            <picture>
+              <source srcset="/images/Bristol-Car-Valeting.webp" type="image/webp" />
+              <img
+                src="/images/Bristol-Car-Valeting.jpg"
+                alt="Bristol Car Valeting Service"
+                class="rounded-2xl shadow-2xl w-full"
+                loading="eager"
+              />
+            </picture>
+          </div>
+          <!-- Stats Card -->
+          <div class="stat-card stat-card-pulse absolute top-4 right-4 bg-white rounded-xl shadow-lg p-4 z-20">
+            <div class="text-center">
+              <span class="text-3xl font-bold text-purple count-number" data-target="3200">3,200+</span>
+              <p class="text-sm text-gray-600">Total Cars Washed</p>
+            </div>
+          </div>
+          <!-- Rating Card -->
+          <div class="stat-card stat-card-pulse absolute bottom-9 left-4 bg-white rounded-xl shadow-lg p-4 z-20">
+            <div class="flex items-center gap-2">
+              <span class="text-3xl font-bold text-gray-900 count-number" data-target="4.9">4.9</span>
+              <div>
+                <div class="flex text-accent">
+                  {[...Array(5)].map(() => (
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  ))}
+                </div>
+                <p class="text-xs text-gray-600">Quality Service</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="relative">
+          <picture>
+            <source srcset="/images/Bristol-van-wash.webp" type="image/webp" />
+            <img
+              src="/images/Bristol-van-wash.jpg"
+              alt="Bristol Van Wash Service"
+              class="rounded-2xl shadow-xl"
+              loading="lazy"
+            />
+          </picture>
+          <picture class="absolute -bottom-8 -right-8 hidden md:block">
+            <source srcset="/images/Bristol-pressure-wash-car.webp" type="image/webp" />
+            <img
+              src="/images/Bristol-pressure-wash-car.jpg"
+              alt="Bristol Pressure Wash Car"
+              class="rounded-2xl shadow-xl border-4 border-white w-[300px] h-[250px] object-cover"
+              loading="lazy"
+            />
+          </picture>
+        </div>
+        <div>
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Local, independent, trusted</p>
+          <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-6">
+            Trust your car or van to expert hands
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Are you stuck with a grubby car, no time to clean it, and no wish to tackle the job yourself? At Painless Car & Van Wash, we offer a full car valeting service near you in Southmead and Westbury-on-Trym. Whether you need a quick car wash or an in-depth car detailing, we keep your ride in top shape while you focus on what matters most.
+          </p>
+          <div class="grid grid-cols-2 gap-4 mb-8">
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">All vehicles welcome</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">Gentle on paintwork</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">Full attention to detail</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">Spotless finish, every time</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">No cheap chemicals</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              <span class="text-sm text-gray-700">Fresh interior feeling</span>
+            </div>
+          </div>
+          <div class="flex flex-wrap items-center gap-6">
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-purple/10 rounded-full flex items-center justify-center">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+              </div>
+              <div>
+                <p class="text-xs text-gray-500">Call us today</p>
+                <p class="font-semibold text-gray-900">07 977 889747</p>
+              </div>
+            </div>
+            <a href="/#pricing" class="bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-secondary transition-colors">
+              View Prices
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section class="py-16 bg-accent">
+    <div class="container mx-auto px-4">
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="bg-white rounded-2xl p-8 text-center shadow-lg hover:shadow-xl transition-shadow">
+          <div class="w-16 h-16 bg-purple/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Trained & Experienced Team</h3>
+          <p class="text-gray-600 text-sm">Our skilled team brings years of valeting experience to every vehicle, ensuring meticulous attention to detail and a spotless finish every time.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-8 text-center shadow-lg hover:shadow-xl transition-shadow">
+          <div class="w-16 h-16 bg-purple/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Premium Products Only</h3>
+          <p class="text-gray-600 text-sm">We use only professional-grade cleaning products that are gentle on your paintwork while delivering a showroom-quality shine that lasts.</p>
+        </div>
+        <div class="bg-white rounded-2xl p-8 text-center shadow-lg hover:shadow-xl transition-shadow">
+          <div class="w-16 h-16 bg-purple/10 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 mb-4">Unbeatable Value</h3>
+          <p class="text-gray-600 text-sm">Get exceptional quality without breaking the bank. Our competitive prices mean you can keep your vehicle looking pristine week after week.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Services Articles Section -->
+  <section id="services" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Our Services</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900">
+          What We Offer
+        </h2>
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {blogPosts.map((post) => (
+          <a href={`/#pricing`} class="bg-white rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-shadow block group border border-gray-100">
+            <div class="relative overflow-hidden">
+              <picture>
+                <source srcset={`${post.image}.webp`} type="image/webp" />
+                <img
+                  src={`${post.image}.jpg`}
+                  alt={post.title}
+                  class="w-full h-48 object-cover group-hover:scale-110 transition-transform duration-500"
+                  loading="lazy"
+                />
+              </picture>
+              <div class="absolute top-4 left-4 flex gap-2">
+                {post.categories.map((cat) => (
+                  <span class="bg-purple text-white text-xs px-3 py-1 rounded-full">{cat}</span>
+                ))}
+              </div>
+            </div>
+            <div class="p-5">
+              <p class="text-purple text-sm font-medium mb-2">{post.date}</p>
+              <h3 class="text-lg font-semibold text-gray-900 mb-2">{post.title}</h3>
+              <p class="text-gray-600 text-sm">{post.excerpt}</p>
+            </div>
+          </a>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Schedule & Map Section -->
+  <section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <!-- Header Row - Full Width -->
+      <div class="text-center mb-12">
+        <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Opening Hours</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900">
+          Visit Us Today!
+        </h2>
+      </div>
+
+      <!-- Two Column Layout -->
+      <div class="grid lg:grid-cols-2 gap-8 items-start">
+        <!-- Opening Hours -->
+        <div class="space-y-3 bg-white rounded-2xl p-6 shadow-sm">
+          {schedule.map((item) => (
+            <div class="flex justify-between items-center py-3 border-b border-gray-100 last:border-0">
+              <span class="font-medium text-gray-900">{item.day}</span>
+              <span class="text-purple font-medium">{item.hours}</span>
+            </div>
+          ))}
+        </div>
+
+        <!-- Map with Address Above -->
+        <div>
+          <!-- Address Above Map -->
+          <div class="mb-4 flex items-center gap-3 bg-white rounded-xl p-4 shadow-sm">
+            <div class="w-10 h-10 bg-purple/10 rounded-full flex items-center justify-center flex-shrink-0">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <div>
+              <p class="text-sm text-gray-500">Find us at</p>
+              <p class="font-semibold text-gray-900">290-294 Southmead Rd, Bristol BS10 5EN</p>
+            </div>
+          </div>
+
+          <!-- Map -->
+          <div class="relative h-[350px] rounded-2xl overflow-hidden shadow-xl">
+            <iframe
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2484.123456789!2d-2.5927!3d51.5002!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x48718e9f9d5d5555%3A0x1234567890abcdef!2s290-294%20Southmead%20Rd%2C%20Bristol%20BS10%205EN!5e0!3m2!1sen!2suk!4v1234567890"
+              width="100%"
+              height="100%"
+              style="border:0;"
+              allowfullscreen=""
+              loading="lazy"
+              referrerpolicy="no-referrer-when-downgrade"
+              title="Painless Car & Van Wash Location"
+            ></iframe>
+          </div>
+
+          <!-- CTA Buttons - stacked on mobile, side by side on tablet+ -->
+          <div class="mt-6 flex flex-col sm:flex-row gap-3">
+            <button type="button" onclick="openBookingModal()" class="sm:flex-1 bg-primary text-white px-6 py-3 rounded-full font-medium hover:bg-secondary transition-colors text-center">
+              Book Now
+            </button>
+            <a href="https://maps.google.com/?q=290-294+Southmead+Rd,+Bristol+BS10+5EN" target="_blank" rel="noopener noreferrer" class="sm:flex-1 border-2 border-primary text-primary px-6 py-3 rounded-full font-medium hover:bg-primary hover:text-white transition-colors flex items-center justify-center gap-2">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+              Get Directions
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Pricing Section -->
+  <section id="pricing" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-12">
+        <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Pricing</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-4">
+          Our Valeting Packages
+        </h2>
+        <p class="text-gray-600 max-w-2xl mx-auto">
+          Professional car wash and valeting services for all vehicle types. Prices start from just £10!
+        </p>
+      </div>
+
+      <!-- Vehicle Type Tabs -->
+      <div class="flex justify-center gap-4 mb-10 flex-wrap">
+        {vehicleTypes.map((type, index) => (
+          <button
+            data-vehicle-tab={type.id}
+            class={`flex flex-col items-center gap-1 px-5 py-3 rounded-2xl font-medium transition-all border-2 min-w-[100px] ${
+              index === 0 ? 'bg-primary text-white border-primary' : 'bg-white text-gray-700 border-gray-200 hover:border-primary hover:bg-primary/5'
+            }`}
+          >
+            <img
+              src={type.image}
+              alt={type.label}
+              class="w-24 h-14 object-contain"
+              loading="lazy"
+            />
+            <span class="text-sm">{type.label}</span>
+          </button>
+        ))}
+      </div>
+
+      <!-- Pricing Grid -->
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {pricingPlans.map((plan) => (
+          <div class={`relative rounded-2xl p-6 shadow-lg transition-all hover:shadow-xl flex flex-col h-full ${
+            plan.popular ? 'bg-accent ring-2 ring-accent' : plan.premium ? 'bg-primary text-white' : 'bg-white'
+          }`}>
+            {/* Package Number */}
+            <div class={`absolute -top-3 -left-3 w-10 h-10 rounded-full flex items-center justify-center text-white font-bold ${
+              plan.premium ? 'bg-accent text-primary' : 'bg-orange-500'
+            }`}>
+              {plan.id}
+            </div>
+
+            {/* Popular Badge */}
+            {plan.popular && (
+              <div class="absolute -top-3 right-4 bg-primary text-white text-xs font-semibold px-3 py-1 rounded-full">
+                Best Value
+              </div>
+            )}
+
+            {/* Premium Badge */}
+            {plan.premium && (
+              <div class="absolute -top-3 right-4 bg-accent text-primary text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1">
+                <span>5-Star</span>
+              </div>
+            )}
+
+            {/* Plan Name */}
+            <h3 class={`text-xl font-semibold mb-4 mt-2 ${
+              plan.premium ? 'text-white' : plan.popular ? 'text-primary' : 'text-gray-900'
+            }`}>
+              {plan.name}
+            </h3>
+
+            {/* Price */}
+            <div class="mb-4">
+              <span
+                class={`text-4xl font-bold ${plan.premium ? 'text-accent' : 'text-primary'}`}
+                data-price
+                data-car={plan.prices.car}
+                data-suv={plan.prices.suv}
+                data-van={plan.prices.van}
+                data-supercar={plan.prices.supercar}
+              >
+                £{plan.prices.car}
+              </span>
+            </div>
+
+            {/* Features */}
+            <ul class="space-y-2 mb-4 flex-grow">
+              {plan.features.map((feature) => (
+                <li class="flex items-start gap-2">
+                  <svg xmlns="http://www.w3.org/2000/svg" class={`h-5 w-5 mt-0.5 flex-shrink-0 ${
+                    plan.premium ? 'text-accent' : plan.popular ? 'text-primary' : 'text-purple'
+                  }`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span class={`text-sm ${plan.premium ? 'text-gray-200' : 'text-gray-600'}`}>{feature}</span>
+                </li>
+              ))}
+            </ul>
+
+            {/* Time Estimate */}
+            {plan.time && (
+              <p class={`text-xs mb-4 ${plan.premium ? 'text-gray-300' : 'text-gray-500'}`}>
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3.5 w-3.5 inline-block mr-1 -mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                {plan.time}
+              </p>
+            )}
+
+            {/* CTA Button */}
+            <button
+              type="button"
+              onclick="openBookingModal()"
+              class={`block text-center py-3 rounded-full font-medium transition-colors mt-auto w-full ${
+                plan.premium
+                  ? 'bg-accent text-primary hover:bg-accent-hover'
+                  : plan.popular
+                    ? 'bg-primary text-white hover:bg-secondary'
+                    : 'bg-primary text-white hover:bg-secondary'
+              }`}
+            >
+              Book Now
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- Why Choose Us Section -->
+  <section class="py-20 bg-gray-50">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-center">
+        <div class="relative">
+          <picture>
+            <source srcset="/images/Bristol-car-valeting-cheap.webp" type="image/webp" />
+            <img
+              src="/images/Bristol-car-valeting-cheap.jpg"
+              alt="Affordable Bristol Car Valeting"
+              class="rounded-2xl shadow-xl"
+              loading="lazy"
+            />
+          </picture>
+        </div>
+        <div>
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Why Choose Us</p>
+          <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-6">
+            Your Local Car Wash in Southmead, Bristol
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Conveniently located on Southmead Road, just a stone's throw from Southmead Hospital and the Arnside Road shops, we're the perfect pit stop for NHS staff, local residents, and anyone passing through Westbury-on-Trym or Henbury. Pop in while you grab a coffee or during your lunch break - your car will be sparkling by the time you're back.
+          </p>
+          <div class="space-y-6">
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-purple/10 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Prime Location Near Southmead Hospital</h3>
+                <p class="text-gray-600 text-sm">Perfect for hospital staff and visitors - get your car cleaned while you work or visit. We're right on the main road with easy access and ample space.</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-4">
+              <div class="w-12 h-12 bg-purple/10 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h3 class="text-lg font-semibold text-gray-900 mb-2">Open 7 Days a Week</h3>
+                <p class="text-gray-600 text-sm">Open 9am to 7pm Monday to Saturday, and 9am to 5pm on Sundays. No appointment needed - simply drive in and we'll take care of the rest.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process Section -->
+  <section class="py-20 bg-primary text-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="text-accent font-medium mb-4 tracking-wider uppercase text-sm">How It Works</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold">
+          Quick & Easy - No Booking Required
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-3 gap-8">
+        <div class="text-center">
+          <div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">01. Drive In & Choose</h3>
+          <p class="text-gray-300 text-sm">Simply drive in during opening hours. Our friendly team will greet you and help you pick the perfect wash package for your vehicle.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-purple rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">02. Relax & Wait</h3>
+          <p class="text-gray-300 text-sm">Take a seat in our comfortable indoor waiting area while our experienced team works their magic. Most washes take just 15-30 minutes.</p>
+        </div>
+        <div class="text-center">
+          <div class="w-20 h-20 bg-accent rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-10 w-10 text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold mb-4">03. Pay & Go</h3>
+          <p class="text-gray-300 text-sm">Pay by cash, card, or contactless - including Apple Pay and Google Pay. Then drive off in your spotless, fresh-smelling vehicle!</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Testimonials Section -->
+  <section class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="text-center mb-16">
+        <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">Testimonials</p>
+        <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900">
+          What Our Customers Say
+        </h2>
+      </div>
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
+        {testimonials.map((testimonial) => (
+          <div class="bg-gray-50 rounded-2xl p-8">
+            <div class="text-4xl text-accent mb-4">"</div>
+            <p class="text-gray-700 mb-6">{testimonial.text}</p>
+            <div class="flex text-accent mb-4">
+              {[...Array(testimonial.rating)].map(() => (
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                </svg>
+              ))}
+            </div>
+            <div class="flex items-center gap-3">
+              <div class="w-12 h-12 bg-purple rounded-full flex items-center justify-center text-white font-semibold">
+                {testimonial.name.charAt(0)}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-900">{testimonial.name}</p>
+                <p class="text-gray-500 text-sm">Verified Customer</p>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ Section -->
+  <section id="faqs" class="py-20 bg-white">
+    <div class="container mx-auto px-4">
+      <div class="grid lg:grid-cols-2 gap-16 items-start">
+        <div>
+          <p class="text-purple font-medium mb-4 tracking-wider uppercase text-sm">FAQs</p>
+          <h2 class="text-3xl md:text-4xl font-heading font-bold text-gray-900 mb-6">
+            Frequently Asked Questions
+          </h2>
+          <p class="text-gray-600 mb-8">
+            Got questions? We've got answers. If you can't find what you're looking for, feel free to give us a call or send us a message.
+          </p>
+          <div class="space-y-4">
+            {faqs.map((faq, index) => (
+              <div class="border-2 border-primary/20 rounded-xl overflow-hidden hover:border-primary/40 transition-colors">
+                <button
+                  class="w-full flex items-center justify-between p-4 text-left bg-white hover:bg-primary/5 transition-colors faq-toggle"
+                  data-index={index}
+                >
+                  <span class="font-medium text-gray-900">{faq.question}</span>
+                  <div class="w-8 h-8 bg-primary/10 rounded-full flex items-center justify-center flex-shrink-0 ml-4">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-primary faq-icon transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </button>
+                <div class="hidden faq-content px-4 pb-4 pt-5 bg-primary/5 border-t border-primary/10">
+                  <p class="text-gray-600">{faq.answer}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div class="relative">
+          <picture>
+            <source srcset="/images/car-wash-contact.webp" type="image/webp" />
+            <img
+              src="/images/car-wash-contact.jpg"
+              alt="Contact Painless Car Wash Bristol"
+              class="rounded-2xl shadow-xl"
+              loading="lazy"
+            />
+          </picture>
+          <div class="absolute bottom-8 left-8 bg-white rounded-xl shadow-lg p-6 max-w-xs">
+            <p class="font-semibold text-gray-900 mb-3">Our Location</p>
+            <div class="space-y-2 text-sm text-gray-600">
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                </svg>
+                290-294 Southmead Rd, Bristol
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                </svg>
+                hello@bristolcarwash.co.uk
+              </p>
+              <p class="flex items-center gap-2">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 text-purple" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                07 977 889747
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</Layout>
+
+<script>
+  // FAQ Toggle
+  document.querySelectorAll('.faq-toggle').forEach((button) => {
+    button.addEventListener('click', () => {
+      const content = button.nextElementSibling;
+      const icon = button.querySelector('.faq-icon');
+
+      content?.classList.toggle('hidden');
+      icon?.classList.toggle('rotate-180');
+    });
+  });
+
+  // Pricing Tabs
+  const tabs = document.querySelectorAll('[data-vehicle-tab]');
+  const prices = document.querySelectorAll('[data-price]');
+
+  tabs.forEach(tab => {
+    tab.addEventListener('click', () => {
+      const vehicle = (tab as HTMLElement).dataset.vehicleTab;
+
+      // Update active tab styling
+      tabs.forEach(t => {
+        t.classList.remove('bg-primary', 'text-white', 'border-primary');
+        t.classList.add('bg-white', 'text-gray-700', 'border-gray-200');
+      });
+      tab.classList.remove('bg-white', 'text-gray-700', 'border-gray-200');
+      tab.classList.add('bg-primary', 'text-white', 'border-primary');
+
+      // Update prices
+      prices.forEach(price => {
+        const el = price as HTMLElement;
+        const newPrice = el.dataset[vehicle as string];
+        el.textContent = `£${newPrice}`;
+      });
+    });
+  });
+
+  // Number Counter Animation with Intersection Observer
+  const animateCounter = (element: HTMLElement, target: number, isDecimal: boolean = false) => {
+    const duration = 2000;
+    const start = 0;
+    const startTime = performance.now();
+
+    const updateCounter = (currentTime: number) => {
+      const elapsed = currentTime - startTime;
+      const progress = Math.min(elapsed / duration, 1);
+
+      // Easing function for smooth animation
+      const easeOutQuart = 1 - Math.pow(1 - progress, 4);
+      const current = start + (target - start) * easeOutQuart;
+
+      if (isDecimal) {
+        element.textContent = current.toFixed(1);
+      } else {
+        element.textContent = Math.floor(current).toLocaleString() + '+';
+      }
+
+      if (progress < 1) {
+        requestAnimationFrame(updateCounter);
+      }
+    };
+
+    requestAnimationFrame(updateCounter);
+  };
+
+  // Intersection Observer for triggering animations
+  const observerOptions = {
+    threshold: 0.5,
+    rootMargin: '0px'
+  };
+
+  const counterObserver = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        const element = entry.target as HTMLElement;
+        const target = parseFloat(element.dataset.target || '0');
+        const isDecimal = target % 1 !== 0;
+        animateCounter(element, target, isDecimal);
+        counterObserver.unobserve(element);
+      }
+    });
+  }, observerOptions);
+
+  // Observe all counter elements
+  document.querySelectorAll('.count-number').forEach(el => {
+    counterObserver.observe(el);
+  });
+</script>
